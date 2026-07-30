@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0D0D0F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%97%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="./manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>anhem · 越南语翻译器</title>
+<style>
+/* ═══ anhem v0.98 — 极简奢华 · 文化桥梁 ═══ */
+
+/* ── Design Tokens ── */
+:root {
+  --bg: #0D0D0F;
+  --surface: #161618;
+  --surface-high: #1E1E21;
+  --ink: #EDEDEF;
+  --ink-secondary: #8E8E93;
+  --ink-tertiary: #636366;
+  --accent: #D4A853;
+  --accent-softer: rgba(212,168,83,0.08);
+  --accent-soft: rgba(212,168,83,0.12);
+  --accent-glow: rgba(212,168,83,0.2);
+  --divider: rgba(255,255,255,0.06);
+  --green: #4CAF50;
+  --green-soft: rgba(76,175,80,0.10);
+  --red: #EF5350;
+  --red-soft: rgba(239,83,80,0.10);
+  --bubble-out: #1E1E21;
+  --bubble-in: #161618;
+  --nav-bg: rgba(13,13,15,0.88);
+  --toast-bg: #1E1E21;
+  --toast-fg: #EDEDEF;
+  --mask-bg: rgba(0,0,0,0.6);
+  --font-display: 'DM Serif Display','Georgia',serif;
+  --font-body: 'Inter',-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  --font-mono: 'JetBrains Mono','SF Mono','Consolas',monospace;
+  --text-hero: 42px; --text-h1: 24px; --text-h2: 18px;
+  --text-body: 15px; --text-body-sm: 13px; --text-caption: 12px; --text-button: 14px;
+  --lh-tight: 1.2; --lh-normal: 1.55; --lh-relaxed: 1.75;
+  --radius-xs: 6px; --radius-sm: 10px; --radius-md: 14px; --radius-lg: 20px; --radius-full: 9999px;
+  --space-xs: 4px; --space-sm: 8px; --space-md: 16px; --space-lg: 24px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.25);
+  --ease-spring: cubic-bezier(0.16,1,0.3,1);
+  --ease-out: cubic-bezier(0,0,0.2,1);
+  --dur-fast: 150ms; --dur-normal: 250ms; --dur-slow: 350ms;
+}
+html.force-light {
+  --bg: #FAF8F5; --surface: #FFFFFF; --surface-high: #F5F2ED;
+  --ink: #1A1A1C; --ink-secondary: #6B6B70; --ink-tertiary: #9999A0;
+  --accent: #B8860B; --accent-softer: rgba(184,134,11,0.06);
+  --accent-soft: rgba(184,134,11,0.10); --accent-glow: rgba(184,134,11,0.18);
+  --divider: rgba(0,0,0,0.06); --green: #2E7D32; --green-soft: rgba(46,125,50,0.08);
+  --red: #C62828; --red-soft: rgba(198,40,40,0.08);
+  --bubble-out: #1A1A1C; --bubble-in: #F5F2ED;
+  --nav-bg: rgba(250,248,245,0.88);
+  --toast-bg: #1A1A1C; --toast-fg: #FAF8F5; --mask-bg: rgba(0,0,0,0.35);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06); --shadow-md: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* ── Global Reset ── */
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; -webkit-overflow-scrolling: touch; }
+a, button, [role="button"], .bar-btn, .nav-item, .persona-card, .tone-tile, .send-btn, .mini-btn, .read-btn, .desktop-pill, .action-btn, .settings-radio, .wiz-skip { touch-action: manipulation; }
+body {
+  font-family: var(--font-body); font-size: var(--text-body); line-height: var(--lh-normal);
+  background: var(--bg); color: var(--ink);
+  display: flex; flex-direction: column;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+}
+button, select, input, textarea {
+  transition: opacity var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+  font-family: var(--font-body); -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+button:active:not(:disabled) { transform: scale(.97); }
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: none; box-shadow: 0 0 0 3px var(--accent-glow);
+}
+::selection { background: var(--accent-soft); color: var(--ink); }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--ink-tertiary); border-radius: var(--radius-full); }
+
+/* ═══ Top Bar ═══ */
+.top-bar {
+  flex-shrink: 0; display: flex; align-items: center;
+  padding: 0 var(--space-md); height: 56px; gap: var(--space-sm);
+}
+.bar-btn {
+  display: flex; align-items: center; gap: 6px;
+  border: none; background: transparent; color: var(--ink-secondary);
+  font-size: var(--text-body-sm); font-weight: 500;
+  padding: 6px 10px; border-radius: var(--radius-full);
+  cursor: pointer; min-height: 36px;
+}
+.bar-btn:hover { background: var(--accent-softer); color: var(--accent); }
+.bar-btn.icon-only { padding: 8px; min-width: 36px; justify-content: center; }
+.persona-btn { font-size: var(--text-body); font-weight: 600; color: var(--ink); }
+.persona-emoji { font-size: 20px; line-height: 1; }
+.persona-chevron { color: var(--ink-tertiary); flex-shrink: 0; }
+.persona-btn:hover .persona-chevron { color: var(--accent); }
+.bar-spacer { flex: 1; }
+.cost-badge {
+  display: flex; align-items: center; gap: 4px; font-size: var(--text-caption);
+  color: var(--ink-tertiary); font-variant-numeric: tabular-nums;
+  padding: 4px 10px; border-radius: var(--radius-full);
+  background: var(--surface); font-weight: 500;
+}
+
+/* ═══ Persona Sheet ═══ */
+.persona-overlay {
+  position: fixed; inset: 0; z-index: 30; background: var(--mask-bg);
+  display: none; opacity: 0; transition: opacity var(--dur-normal);
+}
+.persona-overlay.open { display: block; opacity: 1; }
+.persona-sheet {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 31;
+  background: var(--surface-high); border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: var(--space-md); padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
+  box-shadow: var(--shadow-md); transform: translateY(100%);
+  transition: transform var(--dur-slow) var(--ease-spring); max-height: 65vh; overflow-y: auto;
+}
+.persona-sheet.open { transform: translateY(0); }
+.persona-sheet-handle { width: 32px; height: 4px; background: var(--divider); border-radius: 2px; margin: 0 auto var(--space-sm); }
+.persona-sheet-title { font-size: var(--text-body-sm); font-weight: 600; color: var(--ink-secondary); text-align: center; margin-bottom: var(--space-sm); text-transform: uppercase; letter-spacing: .5px; }
+.persona-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); }
+.persona-card {
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-xs);
+  padding: var(--space-md) var(--space-sm); border-radius: var(--radius-sm);
+  border: 1px solid var(--divider); background: var(--surface);
+  cursor: pointer; text-align: center;
+}
+.persona-card:hover { border-color: var(--accent-soft); }
+.persona-card.on { border-color: var(--accent); background: var(--accent-softer); }
+.persona-card .pc-emoji { font-size: 28px; line-height: 1; }
+.persona-card .pc-name { font-size: var(--text-body-sm); font-weight: 600; color: var(--ink); }
+.persona-card .pc-pron { font-size: var(--text-caption); color: var(--ink-tertiary); }
+
+/* ═══ Desktop Tone Pills ═══ */
+.desktop-pills { display: none; padding: var(--space-sm) var(--space-md); gap: var(--space-xs); justify-content: center; flex-wrap: wrap; }
+@media (min-width: 641px) { .desktop-pills { display: flex; } }
+.desktop-pill {
+  border: 1px solid var(--divider); background: var(--surface);
+  border-radius: var(--radius-full); padding: 6px 14px; font-size: var(--text-caption);
+  cursor: pointer; color: var(--ink-secondary); font-weight: 500; min-height: 32px;
+}
+.desktop-pill:hover { border-color: var(--accent); color: var(--accent); }
+.desktop-pill.on { background: var(--accent); color: #0D0D0F; border-color: var(--accent); }
+
+/* ═══ Main Content ═══ */
+.main-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+/* ═══ Chat Tab ═══ */
+#chatTab { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+#chatTab.hidden { display: none; }
+.chat-list { flex: 1; overflow-y: auto; padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); scroll-behavior: smooth; max-width: 760px; margin: 0 auto; width: 100%; }
+.chat-list.fading { opacity: 0; transition: opacity var(--dur-fast); }
+@media (max-width: 640px) { .chat-list { padding: 10px 8px; gap: 10px; } }
+
+/* ═══ Message Bubble ═══ */
+.msg { display: flex; gap: 10px; align-items: flex-start; animation: msgIn 300ms var(--ease-spring) both; }
+@keyframes msgIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.ava-msg { width: 36px; height: 42px; flex-shrink: 0; }
+.ava-msg svg { width: 100%; height: 100%; display: block; }
+.bubble {
+  flex: 1; max-width: 86%; background: var(--bubble-in);
+  border-radius: var(--radius-sm); border-top-left-radius: 4px;
+  padding: 12px 14px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+}
+.bubble.translating {
+  background: linear-gradient(90deg, var(--surface) 40%, var(--accent-softer) 50%, var(--surface) 60%);
+  background-size: 200% 100%; animation: shimmer 1.8s ease-in-out infinite;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.bhead { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+.dir-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: var(--radius-full); background: var(--accent-soft); color: var(--accent); letter-spacing: .3px; text-transform: uppercase; }
+.dir-badge.rev { background: var(--green-soft); color: var(--green); }
+.bubble .src { font-size: var(--text-body-sm); color: var(--ink-secondary); white-space: pre-wrap; word-break: break-word; padding-left: 10px; border-left: 2px solid var(--accent); margin-bottom: var(--space-sm); line-height: var(--lh-relaxed); }
+.bubble .out { font-size: var(--text-body); line-height: var(--lh-relaxed); white-space: pre-wrap; word-break: break-word; color: var(--ink); }
+.bubble .out.err { color: var(--red); font-size: var(--text-body-sm); }
+.bubble .note { margin-top: var(--space-sm); font-size: var(--text-caption); line-height: var(--lh-normal); color: var(--ink-secondary); background: var(--surface); border-radius: var(--radius-xs); padding: 8px 10px; }
+.bubble .note.addr-note { background: var(--accent-softer); color: var(--accent); }
+.bubble .tools { margin-top: var(--space-sm); display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: center; }
+.mini-btn {
+  font-size: var(--text-caption); padding: 5px 12px; border-radius: var(--radius-full);
+  cursor: pointer; min-height: 32px; font-weight: 500;
+  border: 1px solid var(--divider); background: transparent; color: var(--ink-secondary);
+}
+.mini-btn:hover { border-color: var(--accent); color: var(--accent); }
+.mini-btn.retry { color: var(--red); border-color: var(--red); }
+.mini-btn.fav-btn { font-size: 14px; padding: 4px 8px; }
+.mini-btn.fav-btn.faved { color: var(--accent); border-color: var(--accent); background: var(--accent-softer); }
+.mini-btn.push-btn { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+.cost-badge-msg { font-size: var(--text-caption); color: var(--ink-tertiary); margin-left: auto; }
+
+.typing-cursor::after { content: "▍"; color: var(--accent); animation: caret 1s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.shaking { animation: shake 0.3s ease; }
+
+/* ═══ Empty State ═══ */
+.empty-state {
+  text-align: center; color: var(--ink-secondary); font-size: var(--text-body);
+  line-height: var(--lh-relaxed); margin-top: 48px; padding: 0 var(--space-lg);
+}
+.empty-state .hero {
+  font-family: var(--font-display); font-size: var(--text-hero);
+  color: var(--accent); margin-bottom: var(--space-lg); line-height: var(--lh-tight);
+}
+.empty-step {
+  display: flex; align-items: center; gap: var(--space-sm);
+  padding: 10px var(--space-md); margin: var(--space-sm) auto;
+  background: var(--surface); border-radius: var(--radius-sm);
+  font-size: var(--text-body-sm); max-width: 320px; text-align: left;
+  border: 1px solid var(--divider);
+}
+.empty-step .step-num {
+  width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+  background: var(--surface-high); color: var(--ink-secondary);
+}
+.empty-step.done { border-color: var(--accent); }
+.empty-step.done .step-num { background: var(--accent); color: #0D0D0F; }
+
+/* ═══ Input Area ═══ */
+.input-area {
+  flex-shrink: 0; padding: var(--space-sm) var(--space-md);
+  padding-bottom: calc(var(--space-sm) + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--divider); background: var(--bg);
+}
+@media (min-width: 641px) { .input-area { display: flex; justify-content: center; } }
+.input-row {
+  display: flex; align-items: flex-end; gap: var(--space-sm);
+  background: var(--surface); border-radius: var(--radius-md);
+  border: 1px solid var(--divider); padding: var(--space-xs);
+  transition: border-color var(--dur-fast); max-width: 760px; width: 100%;
+}
+.input-row:focus-within { border-color: var(--accent); }
+.input-row textarea {
+  flex: 1; resize: none; border: none; padding: 8px 12px;
+  font-size: var(--text-body); font-family: var(--font-body); line-height: var(--lh-normal);
+  min-height: 44px; max-height: 160px; outline: none;
+  background: transparent; color: var(--ink); caret-color: var(--accent);
+}
+.input-row textarea::placeholder { color: var(--ink-tertiary); }
+.input-actions { display: flex; align-items: center; gap: var(--space-xs); padding-right: var(--space-xs); flex-shrink: 0; }
+.char-count { font-size: var(--text-caption); color: var(--ink-tertiary); min-width: 24px; text-align: center; }
+.action-btn {
+  width: 34px; height: 34px; border-radius: var(--radius-full);
+  border: none; background: transparent; color: var(--ink-tertiary);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.action-btn:hover { color: var(--ink); background: var(--surface-high); }
+.send-btn {
+  border: none; border-radius: var(--radius-full);
+  padding: 8px 18px; font-size: var(--text-button); font-weight: 600;
+  cursor: pointer; min-height: 38px; letter-spacing: .3px;
+  background: var(--accent); color: #0D0D0F;
+}
+.send-btn:disabled { opacity: .35; cursor: not-allowed; }
+.send-btn.idle { opacity: .6; }
+
+/* ═══ Read Tab ═══ */
+#readTab { display: none; flex-direction: column; flex: 1; overflow: hidden; padding: var(--space-md); gap: var(--space-sm); }
+#readTab.visible { display: flex; }
+@media (min-width: 641px) { #readTab { max-width: 860px; margin: 0 auto; } }
+.read-tools { display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: center; flex-shrink: 0; }
+.read-btn {
+  background: var(--surface); border: 1px solid var(--divider);
+  border-radius: var(--radius-sm); padding: 9px 16px; font-size: var(--text-body-sm);
+  cursor: pointer; color: var(--accent); font-weight: 500; min-height: 44px;
+}
+.read-btn:hover { background: var(--accent-softer); }
+.read-btn.primary { background: var(--accent); color: #0D0D0F; border-color: var(--accent); font-weight: 600; }
+.read-btn:disabled { opacity: .5; }
+.split-btn { display: none !important; }
+@media (min-width: 641px) { .split-btn { display: block !important; } }
+#readSrc {
+  flex-shrink: 0; min-height: 100px; max-height: 35%; resize: none;
+  border: 1px solid var(--divider); border-radius: var(--radius-sm);
+  padding: 12px 16px; font-size: var(--text-body); font-family: var(--font-body); line-height: var(--lh-relaxed);
+  background: var(--surface); color: var(--ink);
+}
+#readSrc:focus { border-color: var(--accent); outline: none; }
+#readOutWrap {
+  flex: 1; min-height: 0; overflow-y: auto; background: var(--surface);
+  border: 1px solid var(--divider); border-radius: var(--radius-sm);
+  padding: 12px 16px; display: flex; flex-direction: column; gap: var(--space-sm);
+}
+#readOutWrap .meta { display: flex; gap: var(--space-sm); align-items: center; }
+#readOut { white-space: pre-wrap; font-size: var(--text-body); line-height: var(--lh-relaxed); word-break: break-word; color: var(--ink); }
+#readOut.placeholder { color: var(--ink-tertiary); font-size: var(--text-body-sm); }
+#readTab.split { flex-direction: row; gap: 0; max-width: 1200px; }
+#readTab.split #readSrc { flex: 1; min-height: 200px; max-height: none; border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+#readTab.split #readOutWrap { flex: 1; min-height: 200px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; border-left: none; }
+
+/* ═══ Settings Tab ═══ */
+#settingsTab { display: none; flex: 1; overflow-y: auto; padding: 0 0 40px; }
+#settingsTab.visible { display: block; }
+@media (min-width: 641px) { #settingsTab { max-width: 680px; margin: 0 auto; } }
+.settings-section {
+  margin: var(--space-sm) var(--space-md); background: var(--surface);
+  border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--divider);
+}
+.settings-section-header { padding: 10px 16px 4px; font-size: 11px; font-weight: 600; color: var(--ink-tertiary); text-transform: uppercase; letter-spacing: .8px; }
+.settings-row { display: flex; align-items: center; padding: 12px 16px; gap: 12px; min-height: 48px; border-bottom: 1px solid var(--divider); }
+.settings-row:last-child { border-bottom: none; }
+.settings-row .row-label { flex: 1; font-size: var(--text-body); color: var(--ink); }
+.settings-row .row-value { font-size: var(--text-body-sm); color: var(--ink-secondary); }
+.settings-row input[type="password"], .settings-row input[type="text"], .settings-row input[type="number"] {
+  flex: 1; border: none; background: transparent; font-size: var(--text-body); color: var(--ink);
+  outline: none; padding: 4px 0; text-align: right;
+}
+.settings-row input::placeholder { color: var(--ink-tertiary); }
+.settings-row textarea {
+  width: 100%; min-height: 80px; border: 1px solid var(--divider);
+  border-radius: var(--radius-xs); padding: 10px 12px; font-size: var(--text-body-sm);
+  font-family: var(--font-body); line-height: var(--lh-relaxed); resize: vertical;
+  background: var(--bg); color: var(--ink);
+}
+.settings-row .row-action {
+  border: none; background: var(--accent); color: #0D0D0F;
+  padding: 6px 14px; border-radius: var(--radius-full); font-size: var(--text-caption); font-weight: 600; cursor: pointer; min-height: 34px;
+}
+.settings-row .row-action.destructive { background: var(--red); color: #fff; }
+.settings-row .row-action.ghost { background: transparent; color: var(--accent); }
+.settings-radio-group { display: flex; gap: 4px; flex: 1; justify-content: flex-end; }
+.settings-radio {
+  border: 1px solid var(--divider); background: var(--surface-high);
+  padding: 6px 14px; border-radius: var(--radius-full); font-size: var(--text-body-sm); cursor: pointer;
+  color: var(--ink-secondary); min-height: 34px; display: flex; align-items: center;
+}
+.settings-radio.on { background: var(--accent-softer); color: var(--accent); border-color: var(--accent); }
+.settings-radio input { display: none; }
+.usage-stat { padding: var(--space-md); text-align: center; }
+.usage-stat .big { font-size: 40px; font-weight: 400; color: var(--accent); font-family: var(--font-display); }
+.usage-stat .sub { font-size: var(--text-body-sm); color: var(--ink-secondary); margin-top: 4px; }
+.usage-stat .detail { font-size: var(--text-body-sm); color: var(--ink-secondary); margin-top: var(--space-sm); line-height: 1.8; }
+.settings-footer { text-align: center; padding: var(--space-md); font-size: var(--text-caption); color: var(--ink-tertiary); }
+.settings-footer a { color: var(--accent); text-decoration: none; }
+
+/* ═══ Nav Bar ═══ */
+.nav-bar {
+  flex-shrink: 0; display: flex; background: var(--nav-bg);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--divider); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; padding: 8px 0 6px; border: none; background: transparent; cursor: pointer;
+  color: var(--ink-tertiary); font-size: 10px; font-weight: 500;
+  min-height: 52px; transition: all var(--dur-fast); position: relative;
+}
+.nav-item .nav-icon { transition: all var(--dur-fast); }
+.nav-item.on { color: var(--accent); }
+.nav-item.on::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 20px; height: 2px; border-radius: 0 0 2px 2px; background: var(--accent);
+}
+
+/* ═══ Context Sheet ═══ */
+#ctxSheet { position: fixed; inset: 0; z-index: 40; display: none; flex-direction: column; justify-content: flex-end; background: var(--mask-bg); }
+#ctxSheet.open { display: flex; }
+#ctxSheet .sheet-body {
+  background: var(--surface-high); border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 20px 16px 28px; max-height: 80vh; overflow-y: auto;
+  box-shadow: var(--shadow-md); transform: translateY(100%);
+  transition: transform var(--dur-slow) var(--ease-spring);
+  padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+}
+#ctxSheet.open .sheet-body { transform: translateY(0); }
+#ctxSheet .sheet-handle { width: 32px; height: 4px; background: var(--ink-tertiary); border-radius: 2px; margin: 0 auto 14px; }
+#ctxSheet .sheet-title { font-size: var(--text-h2); font-weight: 600; margin-bottom: 16px; text-align: center; color: var(--ink); }
+#ctxSheet .sheet-row { display: flex; gap: var(--space-sm); margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+#ctxSheet .sheet-row label { font-size: var(--text-body-sm); color: var(--ink-secondary); flex-basis: 100%; margin-bottom: 2px; }
+#ctxSheet select {
+  flex: 1; min-width: 0; padding: 10px 28px 10px 12px;
+  border: 1px solid var(--divider); border-radius: var(--radius-xs);
+  font-size: var(--text-body); background: var(--surface); color: var(--ink);
+  appearance: none; min-height: 44px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%238E8E93' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; background-size: 12px;
+}
+#ctxSheet input {
+  flex: 1; padding: 10px 12px; border: 1px solid var(--divider);
+  border-radius: var(--radius-xs); font-size: var(--text-body); min-height: 44px;
+  background: var(--surface); color: var(--ink);
+}
+#ctxSheet .sheet-close-btn {
+  position: absolute; top: 16px; right: 16px; width: 34px; height: 34px;
+  border: none; background: var(--surface); border-radius: 50%;
+  font-size: 16px; cursor: pointer; color: var(--ink-secondary);
+  display: flex; align-items: center; justify-content: center;
+}
+#toneGrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-sm); margin-top: 4px; }
+.tone-tile {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  padding: 12px 6px; border-radius: var(--radius-sm);
+  border: 1px solid var(--divider); background: var(--surface);
+  cursor: pointer; font-size: 22px; min-height: 72px; user-select: none;
+}
+.tone-tile .tone-label { font-size: var(--text-caption); font-weight: 600; color: var(--ink-secondary); }
+.tone-tile.on { border-color: var(--accent); background: var(--accent-softer); }
+.tone-tile.on .tone-label { color: var(--accent); }
+.tone-tile:active { transform: scale(.95); }
+
+/* ═══ Wizard ═══ */
+#wizard { position: fixed; inset: 0; background: var(--mask-bg); z-index: 50; display: none; align-items: center; justify-content: center; padding: 20px; }
+#wizard .box {
+  background: var(--surface-high); border-radius: var(--radius-lg);
+  padding: 32px 28px; width: 400px; max-width: 94vw; box-shadow: var(--shadow-md);
+}
+#wizard h2 { font-family: var(--font-display); font-size: 26px; margin-bottom: 6px; color: var(--accent); font-weight: 400; }
+#wizard .lead { font-size: var(--text-body-sm); color: var(--ink-secondary); margin-bottom: 18px; line-height: var(--lh-relaxed); }
+#wizard .lead a { color: var(--accent); text-decoration: none; }
+.wstep { display: none; } .wstep.on { display: block; }
+#wKey { width: 100%; padding: 12px 16px; border: 1px solid var(--divider); border-radius: var(--radius-xs); font-size: var(--text-body); background: var(--surface); color: var(--ink); font-family: var(--font-mono); }
+#wKey:focus { border-color: var(--accent); outline: none; }
+.wbtn {
+  width: 100%; margin-top: 14px; padding: 13px; border: none; border-radius: var(--radius-full);
+  background: var(--accent); color: #0D0D0F; font-size: var(--text-body); font-weight: 600; cursor: pointer; min-height: 48px;
+}
+.wbtn:disabled { opacity: .55; }
+.wiz-skip {
+  display: block; width: 100%; margin-top: var(--space-sm); padding: 10px; border: 1px solid var(--divider);
+  border-radius: var(--radius-full); background: transparent; color: var(--ink-secondary);
+  font-size: var(--text-body-sm); cursor: pointer; min-height: 44px;
+}
+.wiz-skip:hover { color: var(--ink); border-color: var(--ink); }
+#avPrev { display: flex; justify-content: center; margin: 6px 0 14px; min-height: 86px; align-items: center; }
+@media (max-width: 640px) {
+  #wizard { padding: 12px; align-items: flex-end; }
+  #wizard .box { padding: 22px 18px; border-radius: var(--radius-lg) var(--radius-lg) 0 0; width: 100%; max-width: 100%; max-height: 90vh; overflow-y: auto; }
+}
+
+/* ═══ Toast ═══ */
+#toastContainer { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column; gap: var(--space-sm); pointer-events: none; align-items: center; }
+.toast {
+  background: var(--toast-bg); color: var(--toast-fg);
+  padding: 10px 20px; border-radius: var(--radius-full);
+  font-size: var(--text-body-sm); font-weight: 500;
+  pointer-events: auto; box-shadow: var(--shadow-md);
+  border-left: 3px solid var(--accent);
+  animation: toastIn .3s var(--ease-spring), toastOut .3s 1.2s var(--ease-out) forwards;
+  min-height: 40px; display: flex; align-items: center;
+}
+.toast.success { border-left-color: var(--green); }
+.toast.error { border-left-color: var(--red); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-8px) scale(.95); } }
+@keyframes toastOut { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(-8px) scale(.95); } }
+
+/* ═══ Float Chip ═══ */
+.float-chip {
+  position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 25;
+  display: flex; align-items: center; gap: var(--space-sm);
+  background: var(--surface-high); border: 1px solid var(--accent);
+  border-radius: var(--radius-full); padding: 8px 12px 8px 16px;
+  box-shadow: var(--shadow-md); font-size: var(--text-body-sm);
+  color: var(--ink); animation: chipIn .3s var(--ease-spring);
+  max-width: 90vw;
+}
+@keyframes chipIn { from { opacity: 0; transform: translateX(-50%) translateY(-12px); } }
+.float-chip.hidden { display: none; }
+.float-chip span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+.float-chip button {
+  border: none; border-radius: var(--radius-full); cursor: pointer;
+  padding: 6px 14px; font-size: var(--text-caption); font-weight: 600; min-height: 32px; flex-shrink: 0;
+}
+#floatChipBtn { background: var(--accent); color: #0D0D0F; }
+#floatChipDismiss { background: transparent; color: var(--ink-tertiary); padding: 6px 8px !important; }
+
+/* ═══ Responsive ═══ */
+@media (max-width: 640px) {
+  .top-bar { padding: 0 12px; min-height: 52px; }
+  .bubble { padding: 10px 12px; border-radius: 4px var(--radius-sm) var(--radius-sm) var(--radius-sm); max-width: 90%; }
+  .bubble .src { font-size: var(--text-body-sm); }
+  .bubble .out { font-size: var(--text-body); line-height: var(--lh-normal); }
+  .mini-btn { min-height: 36px; padding: 6px 14px; font-size: var(--text-caption); }
+  .input-area { padding: 6px 8px; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
+  #readTab { padding: var(--space-sm) var(--space-sm) 12px; gap: 6px; }
+  #readSrc { font-size: var(--text-body); min-height: 80px; max-height: 140px; }
+  .split-btn { display: none !important; }
+  .desktop-pills { display: none; }
+}
+@media (min-width: 641px) { .desktop-pills { display: flex; } }
+</style>
+</head>
+<body>
+
+<!-- ═══ 顶栏 ═══ -->
+<header class="top-bar">
+  <button class="bar-btn persona-btn" id="personaBtn">
+    <span class="persona-emoji" id="personaBtnEmoji">💗</span>
+    <span id="personaBtnLabel">女友</span>
+    <svg class="persona-chevron" width="12" height="12" viewBox="0 0 12 12"><path d="M3 5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+  </button>
+  <div class="bar-spacer"></div>
+  <button class="bar-btn" id="ctxBtn" style="font-size:13px;font-weight:500">语境</button>
+  <div class="cost-badge" id="costBadge">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/><text x="7" y="10" text-anchor="middle" font-size="8" fill="currentColor">¥</text></svg>
+    <span id="costPillVal">¥0</span>
+  </div>
+  <button class="bar-btn icon-only" id="themeBtn" title="切换主题">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.93 4.93l1.41 1.41M13.66 13.66l1.41 1.41M4.93 15.07l1.41-1.41M13.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </button>
+</header>
+
+<!-- 桌面端语气 Pill 行 -->
+<div class="desktop-pills" id="desktopToneRow"></div>
+
+<!-- Persona 底部 Sheet -->
+<div class="persona-overlay" id="personaOverlay"></div>
+<div class="persona-sheet" id="personaMenu">
+  <div class="persona-sheet-handle"></div>
+  <div class="persona-sheet-title">选择身份</div>
+  <div class="persona-grid" id="personaGrid"></div>
+</div>
+
+<main class="main-content">
+  <!-- Tab 1: Chat -->
+  <section id="chatTab">
+    <div class="chat-list" id="list"></div>
+    <div class="input-area">
+      <div class="input-row">
+        <textarea id="input" rows="1" placeholder="输入文本，Enter 翻译"></textarea>
+        <div class="input-actions">
+          <span class="char-count" id="charCount">0</span>
+          <button class="action-btn" id="inputPaste" title="粘贴剪贴板">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="4" y="2" width="9" height="12" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M3 5H2.5C1.67 5 1 5.67 1 6.5V13.5C1 14.33 1.67 15 2.5 15H9.5C10.33 15 11 14.33 11 13.5V13" stroke="currentColor" stroke-width="1.3"/></svg>
+          </button>
+          <button class="action-btn" id="inputClear" title="清空对话">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5.33 4V2.67c0-.37.3-.67.67-.67h4c.37 0 .67.3.67.67V4m2 0v9.33c0 .74-.6 1.34-1.33 1.34H4.67c-.74 0-1.34-.6-1.34-1.34V4h9.34z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="send-btn idle" id="sendBtn">翻译</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab 2: Read -->
+  <section id="readTab">
+    <div class="read-tools">
+      <button class="read-btn primary" id="pasteGo">📋 一键粘贴翻译</button>
+      <button class="read-btn" id="readGo">翻译</button>
+      <button class="read-btn" id="readClear">清空</button>
+      <button class="read-btn split-btn" id="splitToggle" style="display:none">◫ 分栏</button>
+    </div>
+    <textarea id="readSrc" placeholder="粘贴越南语或中文文章…"></textarea>
+    <div id="readOutWrap">
+      <div class="meta">
+        <span class="dir-badge" id="readDir" style="display:none"></span>
+        <button class="mini-btn" id="readCopy" style="display:none">复制译文</button>
+      </div>
+      <div id="readOut" class="placeholder">译文会显示在这里。</div>
+    </div>
+  </section>
+
+  <!-- Tab 3: Settings -->
+  <section id="settingsTab">
+    <div class="settings-section">
+      <div class="settings-section-header">API 密钥</div>
+      <div class="settings-row">
+        <span class="row-label">Key</span>
+        <input type="password" id="apiKey" placeholder="sk-...">
+        <button class="row-action ghost" id="testKey">检测</button>
+      </div>
+      <div style="padding:4px 16px 12px;font-size:var(--text-caption);color:var(--ink-secondary);">
+        在 <a href="https://platform.deepseek.com" target="_blank" rel="noopener noreferrer">platform.deepseek.com</a> 创建 API Key。
+      </div>
+      <div id="keyStatus" style="padding:0 16px 12px;font-size:var(--text-body-sm);"></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-header">我的资料</div>
+      <div class="settings-row">
+        <span class="row-label">性别</span>
+        <div class="settings-radio-group" id="myGenderGroup">
+          <label class="settings-radio"><input type="radio" name="myGender" value="male">男</label>
+          <label class="settings-radio"><input type="radio" name="myGender" value="female">女</label>
+        </div>
+      </div>
+      <div class="settings-row">
+        <span class="row-label">年龄</span>
+        <input type="number" id="myAge" min="10" max="99" placeholder="如 32">
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-header">越南语方言</div>
+      <div class="settings-row">
+        <div class="settings-radio-group" id="dialectGroup" style="flex:1;justify-content:flex-start">
+          <label class="settings-radio"><input type="radio" name="dialect" value="north">北方·河内</label>
+          <label class="settings-radio"><input type="radio" name="dialect" value="south">南方·胡志明</label>
+        </div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-header">术语表</div>
+      <div class="settings-row" style="flex-direction:column;align-items:stretch;padding:12px 16px;">
+        <textarea id="glossary" placeholder="固定译法，一行一条。例：&#10;阿俊 = Tuấn&#10;立三方 = Lập Tam Phương"></textarea>
+        <div style="font-size:var(--text-caption);color:var(--ink-secondary);margin-top:6px">人名、公司名、行业词写在这里。</div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-header">用量统计</div>
+      <div class="usage-stat">
+        <div class="big" id="uCny">¥0</div>
+        <div class="sub">累计花费</div>
+        <div class="detail">翻译 <b id="uReqs">0</b> 次 · 消耗 <b id="uTokens">0</b> tokens</div>
+        <button class="row-action ghost" id="resetUsage" style="margin-top:var(--space-sm);width:100%">清零统计</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-header">灵动岛通知</div>
+      <div class="settings-row">
+        <span class="row-label">翻译结果推送</span>
+        <div class="settings-radio-group" id="notifyGroup">
+          <label class="settings-radio on"><input type="radio" name="notify" value="on" checked>开</label>
+          <label class="settings-radio"><input type="radio" name="notify" value="off">关</label>
+        </div>
+      </div>
+      <div style="padding:4px 16px 12px;font-size:var(--text-caption);color:var(--ink-secondary);">
+        Chrome on OnePlus/ColorOS 会将通知显示为灵动岛胶囊。
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-header">收藏翻译</div>
+      <div id="favListContainer" style="max-height:220px;overflow-y:auto">
+        <div style="padding:16px;text-align:center;color:var(--ink-tertiary);font-size:var(--text-body-sm)" id="favEmpty">暂无收藏</div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-row" style="justify-content:center">
+        <button class="row-action destructive" id="clearChat" style="width:100%">清空当前对话</button>
+      </div>
+      <div class="settings-row" style="justify-content:center">
+        <button class="row-action ghost" id="resetAll" style="width:100%;color:var(--red)">恢复默认设置</button>
+      </div>
+    </div>
+    <div class="settings-footer">
+      <p>anhem 越南语翻译器 · v0.98</p>
+      <p style="margin-top:2px"><a href="https://platform.deepseek.com" target="_blank" rel="noopener noreferrer">DeepSeek 驱动</a></p>
+    </div>
+  </section>
+</main>
+
+<!-- ═══ 底部导航 ═══ -->
+<nav class="nav-bar">
+  <button class="nav-item on" data-tab="chat">
+    <svg class="nav-icon" width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 11c0-4.42 3.58-8 8-8s8 3.58 8 8-3.58 8-8 8c-.79 0-1.55-.12-2.27-.33L5 20l.67-3.03C4.06 15.7 3 13.47 3 11z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>聊天</span>
+  </button>
+  <button class="nav-item" data-tab="read">
+    <svg class="nav-icon" width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M2 3h7l2 2h7a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+    <span>阅读</span>
+  </button>
+  <button class="nav-item" data-tab="settings">
+    <svg class="nav-icon" width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M18.4 13.2l-1.21.7.65 1.12a2 2 0 01-.73 2.73l-.73.42a2 2 0 01-2.73-.73l-.65-1.12-1.4 0m-3.2-9.24l1.21-.7-.65-1.12a2 2 0 01.73-2.73l.73-.42a2 2 0 012.73.73l.65 1.12 1.4 0M3.6 8.8l1.21-.7-.65-1.12a2 2 0 01.73-2.73l.73-.42a2 2 0 012.73.73l.65 1.12 1.4 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <span>设置</span>
+  </button>
+</nav>
+
+<!-- 语境微调 Sheet -->
+<div id="ctxSheet">
+  <div class="sheet-body" id="ctxSheetBody">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close-btn" id="sheetCloseBtn">✕</button>
+    <div class="sheet-title">微调语境</div>
+    <div class="sheet-row"><label>关系</label><select id="ctxSheetRel"><option value="lover">伴侣</option><option value="friend">朋友</option><option value="client">客户</option><option value="elder">长辈</option><option value="stranger">陌生人</option><option value="custom">自定义</option></select></div>
+    <div class="sheet-row"><label>性别 / 年龄</label><select id="ctxSheetG"><option value="female">女</option><option value="male">男</option></select><select id="ctxSheetA"><option value="younger">比我小</option><option value="same">差不多</option><option value="older">比我大</option></select></div>
+    <div class="sheet-row" id="sheetCustomRow" style="display:none"><label>自定义称谓</label><input id="sheetCMe" placeholder="我自称"><input id="sheetCThem" placeholder="称对方"><input id="sheetCDesc" placeholder="关系描述" style="flex-basis:100%;margin-top:4px"></div>
+    <div class="sheet-row" style="flex-direction:column"><label>语气</label>
+      <div id="toneGrid">
+        <div class="tone-tile on" data-tone=""><span>😊</span><span class="tone-label">默认</span></div>
+        <div class="tone-tile" data-tone="coquettish"><span>🥰</span><span class="tone-label">撒娇</span></div>
+        <div class="tone-tile" data-tone="angry"><span>😤</span><span class="tone-label">生气</span></div>
+        <div class="tone-tile" data-tone="formal"><span>👔</span><span class="tone-label">正式</span></div>
+        <div class="tone-tile" data-tone="casual"><span>💬</span><span class="tone-label">随意</span></div>
+        <div class="tone-tile" data-tone="humorous"><span>😂</span><span class="tone-label">幽默</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 新手引导 -->
+<div id="wizard">
+  <div class="box">
+    <div class="wstep on" id="wstep1">
+      <h2>anhem</h2>
+      <p class="lead">由 DeepSeek 驱动，需要你的 API Key。<br>去 <a href="https://platform.deepseek.com" target="_blank" rel="noopener noreferrer">platform.deepseek.com</a> 注册 → 充值 → 创建 API Key。</p>
+      <input id="wKey" type="password" placeholder="粘贴 API Key (sk- 开头)">
+      <button class="wbtn" id="wConn">连接并自动配置</button>
+      <button class="wiz-skip" id="wizSkip1" title="稍后设置">稍后设置</button>
+      <div id="connLog"></div>
+    </div>
+    <div class="wstep" id="wstep2">
+      <h2>创建形象</h2>
+      <p class="lead">越南语称谓由双方性别、年龄决定。</p>
+      <div id="avPrev"></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px" id="wGenderGroup">
+        <label class="settings-radio on" style="flex:1;justify-content:center"><input type="radio" name="wGender" value="male" checked>男</label>
+        <label class="settings-radio" style="flex:1;justify-content:center"><input type="radio" name="wGender" value="female">女</label>
+      </div>
+      <input type="number" id="wAge" min="10" max="99" placeholder="年龄，如 32" style="width:100%;padding:12px 16px;border:1px solid var(--divider);border-radius:var(--radius-xs);font-size:var(--text-body);background:var(--surface);color:var(--ink)">
+      <button class="wbtn" id="wGo">开始使用</button>
+      <button class="wiz-skip" id="wizSkip2" title="稍后设置">稍后设置</button>
+      <div id="wErr2" style="color:var(--red);font-size:var(--text-body-sm);margin-top:var(--space-sm);display:none">请填写 10~99 之间的年龄</div>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<!-- 浮动翻译芯片 -->
+<div id="floatChip" class="float-chip hidden">
+  <span id="floatChipText"></span>
+  <button id="floatChipBtn">翻译</button>
+  <button id="floatChipDismiss">✕</button>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data?.type === 'fillInput') window.__swFillInput = e.data;
+  });
+}
+</script>
+<script src="app.js"></script>
+</body>
+</html>

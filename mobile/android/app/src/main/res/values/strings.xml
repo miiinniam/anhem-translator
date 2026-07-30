@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">anhem</string>
+    <string name="clipboard_monitoring">翻译监听中</string>
+    <string name="translate">翻译</string>
+    <string name="copy_result">复制译文</string>
+    <string name="input_hint">输入要翻译的文字…</string>
+    <string name="settings">设置</string>
+    <string name="service_running">监听中</string>
+</resources>

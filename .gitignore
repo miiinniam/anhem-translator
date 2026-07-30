@@ -1,0 +1,40 @@
+# Android build outputs
+mobile/android/app/build/
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/local.properties
+mobile/android/*.apk
+
+# IDE & Agent configs
+.claude/
+.claude-plugin/
+.codegraph/
+.omo/
+.hermes/
+
+# Large logs & sessions
+events.jsonl
+sessions/
+
+# Craft Agent metadata
+labels/
+statuses/
+sources/
+projects/
+views.json
+
+# Archive (old versions)
+archive/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Dependencies
+node_modules/
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local

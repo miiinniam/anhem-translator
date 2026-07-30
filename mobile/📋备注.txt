@@ -1,0 +1,12 @@
+📱 移动端项目 (mobile/)
+═══════════════════════════════════
+用途：Android 原生应用 + PWA 版本
+
+目录说明：
+  android/    → Android 原生项目 (Kotlin + Gradle)
+                 含灵动岛 (Dynamic Island) 集成
+                 针对 OnePlus 等设备优化
+  anhem-pwa/  → PWA 独立版本
+                 (⚠️ 迁移中，根目录另有副本 _anhem-pwa-已迁移至mobile-可删除)
+
+注意：Android 项目依赖 Gradle，首次打开需同步。

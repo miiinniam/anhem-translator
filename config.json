@@ -1,0 +1,18 @@
+{
+  "id": "ws_dbc4480a",
+  "name": "主次越南语翻译器",
+  "slug": "workspace",
+  "defaults": {
+    "permissionMode": "safe",
+    "cyclablePermissionModes": [
+      "safe",
+      "allow-all"
+    ],
+    "enabledSourceSlugs": []
+  },
+  "localMcpServers": {
+    "enabled": true
+  },
+  "createdAt": 1783422754282,
+  "updatedAt": 1783422754283
+}

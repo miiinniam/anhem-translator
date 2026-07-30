@@ -1,0 +1,25 @@
+{
+  "name": "anhem · 越南语翻译器",
+  "short_name": "anhem",
+  "description": "中越双语翻译器，支持8种身份语气，灵动岛通知",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0D0D0F",
+  "theme_color": "#0D0D0F",
+  "orientation": "portrait-primary",
+  "lang": "zh-CN",
+  "share_target": {
+    "action": "/share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  },
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%230D0D0F'/%3E%3Ctext x='96' y='130' font-size='110' text-anchor='middle'%3E💗%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

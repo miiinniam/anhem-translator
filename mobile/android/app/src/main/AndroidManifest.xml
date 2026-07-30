@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 网络 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 前台服务 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- 通知 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Android 16: Live Update Promotion（非运行时权限） -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+    <!-- Fluid Cloud 悬浮窗（ColorOS 可能需要） -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <application
+        android:name=".AnhemApp"
+        android:allowBackup="true"
+        android:label="anhem"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Anhem"
+        android:usesCleartextTraffic="true">
+
+        <!-- WebView 主启动页 -->
+        <activity
+            android:name=".ui.screen.WebViewActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Anhem"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|keyboard"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 保留原 Compose 版 MainActivity（备用） -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Anhem" />
+
+        <!-- 翻译面板 -->
+        <activity
+            android:name=".ui.screen.TranslatePanelActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Anhem"
+            android:launchMode="singleTask" />
+
+        <!-- 剪贴板监听前台服务 -->
+        <service
+            android:name=".service.ClipboardMonitorService"
+            android:foregroundServiceType="specialUse"
+            android:exported="false" />
+
+        <!-- Fluid Cloud / Live Update 胶囊触发接收器 -->
+        <receiver
+            android:name=".platform.CapsuleReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.anhem.translator.SHOW_CAPSULE" />
+            </intent-filter>
+        </receiver>
+
+        <!-- 灵动岛通知栏"复制"按钮接收器 -->
+        <receiver
+            android:name=".ui.capsule.CopyReceiver"
+            android:exported="false" />
+    </application>
+</manifest>

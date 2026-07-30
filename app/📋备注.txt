@@ -1,0 +1,13 @@
+📱 主应用 (app/)
+═══════════════════════════════════
+用途：anhem 越南语翻译器 — 当前使用版本
+版本：v4.0 PWA 灵动岛版
+
+文件说明：
+  index-v4.0-PWA灵动岛.html  → 主页面 (v4.0，聊天+阅读双模式)
+  app-v4.0.js                → 核心逻辑 (翻译引擎、DeepSeek API、灵动岛通知)
+  sw.js                      → Service Worker (PWA 离线缓存)
+  manifest.json              → PWA 应用清单
+
+运行方式：双击 index-v4.0-PWA灵动岛.html 即可
+依赖：DeepSeek API Key
