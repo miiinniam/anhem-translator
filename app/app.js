@@ -635,21 +635,27 @@ function applyTheme() {
 applyTheme();
 $("#themeBtn").onclick = () => { themeMode = themeMode === "auto" ? "light" : themeMode === "light" ? "dark" : "auto"; store.save("themeMode", themeMode); applyTheme(); };
 
-// ═══ 键盘处理（仅在键盘弹出时调整）═══
+// ═══ 键盘处理（仅在键盘弹出时调整；灵动岛/状态栏等系统 UI 变化不干预布局）═══
 if (window.visualViewport) {
   let _vpRaf = 0;
+  const isInputFocused = () => {
+    const el = document.activeElement;
+    return el && (el.tagName === "TEXTAREA" || el.tagName === "INPUT" || el.isContentEditable);
+  };
   const handleViewport = () => {
     cancelAnimationFrame(_vpRaf);
     _vpRaf = requestAnimationFrame(() => {
       const vh = window.visualViewport.height;
       const wh = window.innerHeight;
-      // 仅当键盘明显弹出时（高度差 > 100px）才调整
-      if (wh - vh > 100) {
+      const diff = wh - vh;
+      // 只有输入框聚焦 + 高度差明显(>150px)才视为键盘弹出
+      const kb = isInputFocused() && diff > 150;
+      if (kb) {
         document.body.style.height = vh + "px";
       } else {
         document.body.style.height = "";
       }
-      const offset = Math.max(0, wh - vh);
+      const offset = kb ? diff : 0;
       const c = document.getElementById("ctxSheet"), w = document.getElementById("wizard");
       if (c) c.style.paddingBottom = offset + "px";
       if (w) w.style.paddingBottom = offset + "px";
