@@ -6,6 +6,20 @@
 const API_BASE = "https://api.deepseek.com";
 const TYPEWRITER_SPEED = 6;
 const INSTANT_TW_LEN = 600;
+// ═══ 版本与更新日志(每次发版 bump 版本号 + 写更新说明,客户端自动弹窗)═══
+const APP_VERSION = "0.99.1";
+const UPDATE_LOG = [
+  { version: "0.99.1", title: "v0.99.1 更新来了", items: [
+    "💬 支持同时翻译多句(最多 3 句),一句卡住不影响其他句",
+    "⏸ 长按句子可取消翻译,不再干等",
+    "🛡 防卡死:15 秒无响应自动提示超时",
+    "🪟 新增更新提示弹窗",
+    "🛠 修复灵动岛激活导致的白色竖条"
+  ]}
+];
+// 活跃翻译任务: cardId -> { controller, canceledByUser }
+const activeJobs = new Map();
+let jobSeq = 0;
 const $ = s => document.querySelector(s);
 const store = {
   load(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
@@ -274,24 +288,81 @@ function escHtml(s) { const e = document.createElement("span"); e.textContent = 
 function cardEl(c) {
   const faved = isFaved(c.src, c.dir);
   const d = document.createElement("div"); d.className = "msg";
-  d.innerHTML = '<div class="ava-msg">' + (isComposing(c.dir) ? meAvatar() : themAvatar()) + '</div><div class="bubble"><div class="bhead"><span class="dir-badge' + (!isComposing(c.dir) ? " rev" : "") + '">' + dirLabel(c.dir) + '</span></div><div class="src">' + escHtml(c.src) + '</div><div class="out' + (c.err ? " err" : "") + '">' + escHtml(c.out) + '</div>' + (c.note ? '<div class="note' + (c.note.includes('原文称谓') ? ' addr-note' : '') + '">' + escHtml(c.note) + '</div>' : "") + '<div class="tools">' + (c.err ? '<button class="mini-btn retry">🔄 重试</button>' : '') + '<button class="mini-btn fav-btn' + (faved ? ' faved' : '') + '">' + (faved ? '⭐' : '☆') + '</button><button class="mini-btn copy">📋 复制</button>' + (hasBridge ? '<button class="mini-btn push-btn">🔔 灵动岛</button>' : '') + '<span class="cost-badge">' + (c.costCny != null ? "¥" + c.costCny.toFixed(4) : "") + '</span></div></div>';
-  const copyBtn = d.querySelector(".copy-btn"); if (copyBtn) copyBtn.onclick = () => {
+  if (c.id) d.dataset.id = c.id;
+  const st = c.status || "done";
+  const errState = st === "error" || st === "canceled";
+  const pending = st === "pending";
+  d.innerHTML = '<div class="ava-msg">' + (isComposing(c.dir) ? meAvatar() : themAvatar()) + '</div><div class="bubble"><div class="bhead"><span class="dir-badge' + (!isComposing(c.dir) ? " rev" : "") + '">' + dirLabel(c.dir) + '</span></div><div class="src">' + escHtml(c.src) + '</div><div class="out' + (errState ? " err" : "") + '">' + (pending ? "" : escHtml(c.out)) + '</div>' + (c.note ? '<div class="note' + (c.note.includes('原文称谓') ? ' addr-note' : '') + '">' + escHtml(c.note) + '</div>' : "") + '<div class="tools">' + cardToolsHtml(c, faved, st) + '</div></div>';
+  bindCardButtons(d, c, faved, st);
+  bindLongPress(d.querySelector(".bubble") || d, c);
+  return d;
+}
+function cardToolsHtml(c, faved, st) {
+  if (st === "pending") return '<span class="cost-badge-msg">翻译中…</span>';
+  if (st === "error" || st === "canceled") {
+    return '<button class="mini-btn retry">🔄 重试</button>' + (c.out ? '<button class="mini-btn copy">📋 复制</button>' : '');
+  }
+  return '<button class="mini-btn fav-btn' + (faved ? ' faved' : '') + '">' + (faved ? '⭐' : '☆') + '</button><button class="mini-btn copy">📋 复制</button>' + (hasBridge ? '<button class="mini-btn push-btn">🔔 灵动岛</button>' : '') + '<span class="cost-badge">' + (c.costCny != null ? "¥" + c.costCny.toFixed(4) : "") + '</span>';
+}
+function bindCardButtons(d, c, faved, st) {
+  const copyBtn = d.querySelector(".copy");
+  if (copyBtn) copyBtn.onclick = () => {
     const t = c.out;
     navigator.clipboard.writeText(t).then(() => toast("已复制", "success"));
     if (hasBridge) AndroidBridge.copyToClipboard(t);
   };
-  // fallback: old .copy class
-  const oldCopy = d.querySelector(".copy"); if (oldCopy && !copyBtn) oldCopy.onclick = () => {
-    navigator.clipboard.writeText(c.out).then(() => toast("已复制", "success"));
-    if (hasBridge) AndroidBridge.copyToClipboard(c.out);
-  };
-  const rb = d.querySelector(".retry"); if (rb) rb.onclick = () => { $("#input").value = c.src; updateInputUI(); translate(); };
-  const fb = d.querySelector(".fav-btn"); if (fb) fb.onclick = function() { const nowFaved = toggleFav(c.src, c.out, c.dir, c.note); this.textContent = nowFaved ? "⭐" : "☆"; this.classList.toggle("faved", nowFaved); toast(nowFaved ? "已收藏" : "已取消收藏", "success"); };
+  const rb = d.querySelector(".retry");
+  if (rb) rb.onclick = () => { d.remove(); startTranslate([c.src]); };
+  const fb = d.querySelector(".fav-btn");
+  if (fb) fb.onclick = function() { const nowFaved = toggleFav(c.src, c.out, c.dir, c.note); this.textContent = nowFaved ? "⭐" : "☆"; this.classList.toggle("faved", nowFaved); toast(nowFaved ? "已收藏" : "已取消收藏", "success"); };
   const pb = d.querySelector(".push-btn");
   if (pb) pb.onclick = () => {
     if (hasBridge) { AndroidBridge.showLiveUpdate(c.src, c.out, c.dir); toast("已推送到灵动岛", "success"); }
   };
-  return d;
+}
+// 长按 500ms / 右键 → 弹出卡片操作菜单
+function bindLongPress(el, c) {
+  if (!el) return;
+  let timer = null, sx = 0, sy = 0;
+  const clear = () => { if (timer) { clearTimeout(timer); timer = null; } };
+  el.addEventListener("touchstart", e => {
+    const t = e.touches[0]; sx = t.clientX; sy = t.clientY;
+    clear();
+    timer = setTimeout(() => { timer = null; showCardMenu(c); }, 500);
+  }, { passive: true });
+  el.addEventListener("touchmove", e => {
+    const t = e.touches[0];
+    if (Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10) clear();
+  }, { passive: true });
+  el.addEventListener("touchend", clear);
+  el.addEventListener("touchcancel", clear);
+  el.addEventListener("contextmenu", e => { e.preventDefault(); showCardMenu(c); });
+}
+// ═══ 卡片长按菜单 ═══
+let menuCard = null;
+function showCardMenu(c) {
+  menuCard = c;
+  const m = $("#cardMenu"); if (!m) return;
+  const st = c.status || "done";
+  const items = [];
+  if (st === "pending") items.push({ icon: "⏹", label: "取消翻译", danger: true, act: () => cancelTranslate(c.id) });
+  else if (st === "error" || st === "canceled") items.push({ icon: "🔄", label: "重试翻译", act: () => { const el = document.querySelector('.msg[data-id="' + c.id + '"]'); if (el) el.remove(); startTranslate([c.src]); } });
+  if (c.out && st !== "pending") {
+    items.push({ icon: "📋", label: "复制译文", act: () => { navigator.clipboard.writeText(c.out).then(() => toast("已复制", "success")); if (hasBridge) AndroidBridge.copyToClipboard(c.out); } });
+    items.push({ icon: "⭐", label: isFaved(c.src, c.dir) ? "取消收藏" : "收藏", act: () => { const now = toggleFav(c.src, c.out, c.dir, c.note); toast(now ? "已收藏" : "已取消收藏", "success"); } });
+  }
+  $("#cardMenuSrc").textContent = c.src;
+  $("#cardMenuItems").innerHTML = items.map(it => '<button class="menu-item' + (it.danger ? " danger" : "") + '"><span class="mi-icon">' + it.icon + '</span>' + it.label + '</button>').join("");
+  const btns = $("#cardMenuItems").querySelectorAll(".menu-item");
+  items.forEach((it, i) => { btns[i].onclick = () => { closeCardMenu(); it.act(); }; });
+  m.classList.add("open");
+}
+function closeCardMenu() { const m = $("#cardMenu"); if (m) m.classList.remove("open"); menuCard = null; }
+function cancelTranslate(cardId) {
+  const job = activeJobs.get(cardId);
+  if (job) { job.canceledByUser = true; job.controller.abort(); }
+  else { const el = document.querySelector('.msg[data-id="' + cardId + '"]'); if (el) { const c2 = { ...menuCard, status: "canceled", out: "已取消翻译" }; const ne = cardEl(c2); el.replaceWith(ne); } }
+  toast("已取消翻译");
 }
 
 function renderAll() { const l = $("#list"); l.innerHTML = cards.length ? "" : emptyGuide(); cards.forEach(c => l.appendChild(cardEl(c))); $("#chatTab").querySelector(".chat-list").scrollTop = $("#chatTab").querySelector(".chat-list").scrollHeight; }
@@ -434,49 +505,119 @@ function buildMessages(t, dir) {
   ms.push({ role: "user", content: "方向:" + dirLabel(dir) + "\n<|text|>\n" + t + "\n</|text|>\n只输出译文" }); return ms;
 }
 
-// ═══ 聊天翻译 ═══
+// ═══ 聊天翻译(支持多句并发 ≤3,防卡死)═══
+function splitSentences(t) {
+  let parts = t.split(/\n+/).map(s => s.trim()).filter(Boolean);
+  if (parts.length <= 1) {
+    parts = t.split(/(?<=[。！？!?；;])\s*/).map(s => s.trim()).filter(Boolean);
+  }
+  if (parts.length > 3) { toast("一次最多同时翻译 3 句,已取前 3 句"); parts = parts.slice(0, 3); }
+  return parts;
+}
+function startTranslate(texts) {
+  const sb = $("#sendBtn");
+  const emptyEl = document.querySelector(".empty-state"); if (emptyEl) emptyEl.remove();
+  const jobs = texts.map((s, i) => {
+    const d = computeDirection(s);
+    const c = { id: "job" + (++jobSeq), dir: d.dir, src: s, out: "", note: "", ctxKey: ctxKey(), status: "pending" };
+    const el = cardEl(c);
+    const oe = el.querySelector(".out"); oe.classList.add("typing-cursor");
+    const bubbleEl = el.querySelector(".bubble"); if (bubbleEl) bubbleEl.classList.add("translating");
+    $("#list").appendChild(el);
+    const chatL = $("#chatTab").querySelector(".chat-list"); chatL.scrollTop = chatL.scrollHeight;
+    return { c, el, oe };
+  });
+  busy = true; if (sb) { sb.disabled = true; sb.classList.remove("idle"); }
+  Promise.allSettled(jobs.map(j => doTranslateSentence(j))).then(() => {
+    busy = false; if (sb) { sb.disabled = false; sb.classList.add("idle"); }
+    const cl2 = $("#chatTab").querySelector(".chat-list"); if (cl2) cl2.scrollTop = cl2.scrollHeight;
+  });
+  return jobs;
+}
 async function translate() {
   const t = $("#input").value.trim();
   if (!t || busy) { if (!t && !busy) { const inp = $("#input"); inp.classList.add("shaking"); inp.addEventListener("animationend", () => inp.classList.remove("shaking"), { once: true }); toast("请输入文本", "error"); } return; }
   if (!getKey() || !profile) { startWizard(); return; }
-  const d = computeDirection(t); const dir = d.dir; const sb = $("#sendBtn"); sb.disabled = true; sb.classList.remove("idle");
+  const parts = splitSentences(t);
   $("#input").value = ""; $("#input").style.height = "auto"; $("#input").blur();
-  const c = { dir, src: t, out: "", note: "", ctxKey: ctxKey() }, el = cardEl(c), oe = el.querySelector(".out"); oe.classList.add("typing-cursor");
-  const bubbleEl = el.querySelector(".bubble"); if (bubbleEl) bubbleEl.classList.add("translating");
-  const emptyEl = document.querySelector(".empty-state"); if (emptyEl) emptyEl.remove();
-  const l = $("#list"); l.appendChild(el); const chatL = $("#chatTab").querySelector(".chat-list"); chatL.scrollTop = chatL.scrollHeight;
-  let full = "", usage = null, parseErrors = 0; let displayed = 0;
-  if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null; }
-  let twResolve = null; const twPromise = new Promise(r => { twResolve = r; });
-  function startTypewrite() { typewrite(); }
+  startTranslate(parts);
+}
+// 单句翻译:独立 AbortController / 首字节15s超时 / 总超时60s / 用户可取消
+async function doTranslateSentence({ c, el, oe }) {
+  const dir = c.dir;
+  const controller = new AbortController();
+  activeJobs.set(c.id, { controller, canceledByUser: false });
+  let full = "", usage = null, parseErrors = 0, displayed = 0, gotData = false;
+  let twTimer = null, twResolve = null;
+  const twPromise = new Promise(r => { twResolve = r; });
   function typewrite() {
     if (displayed < full.length) {
       displayed++; oe.textContent = full.slice(0, displayed);
       const gap = full.length - displayed;
-      const speed = gap > 3 ? Math.max(5, TYPEWRITER_SPEED >> 1) : TYPEWRITER_SPEED;
-      typewriterTimer = setTimeout(typewrite, speed);
-    } else { typewriterTimer = null; if (twResolve) { twResolve(); twResolve = null; } }
+      const speed = gap > 3 ? Math.max(3, TYPEWRITER_SPEED >> 1) : TYPEWRITER_SPEED;
+      twTimer = setTimeout(typewrite, speed);
+    } else { twTimer = null; if (twResolve) { twResolve(); twResolve = null; } }
   }
-  if (chatAbort) { chatAbort.abort(); chatAbort = null; }
-  chatAbort = new AbortController(); const timeoutId = setTimeout(() => chatAbort.abort(), 60000);
+  const totalTimeout = setTimeout(() => controller.abort(), 60000);
+  const firstByteTimeout = setTimeout(() => { if (!gotData) controller.abort(); }, 15000);
+  let canceledByUser = false;
   try {
-    busy = true;
-    const res = await fetch(API_BASE + "/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + getKey() }, signal: chatAbort.signal, body: JSON.stringify({ model: MODELS[setting.model].name, messages: buildMessages(t, dir), temperature: 0.2, thinking: { type: setting.thinkMode === "deep" ? "enabled" : "disabled" }, max_tokens: 2048, frequency_penalty: 0.15, stream: true, stream_options: { include_usage: true } }) });
+    const res = await fetch(API_BASE + "/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + getKey() }, signal: controller.signal, body: JSON.stringify({ model: MODELS[setting.model].name, messages: buildMessages(c.src, dir), temperature: 0.2, thinking: { type: setting.thinkMode === "deep" ? "enabled" : "disabled" }, max_tokens: 2048, frequency_penalty: 0.15, stream: true, stream_options: { include_usage: true } }) });
     if (!res.ok) { let m = "HTTP " + res.status; if (res.status === 401) m = "API Key 无效"; else if (res.status === 402) m = "余额不足"; else if (res.status === 403) m = "权限不足"; else if (res.status === 429) m = "请求过于频繁请稍后"; else if (res.status === 500) m = "服务器错误"; else if (res.status === 503) m = "服务暂时不可用"; throw new Error(m); }
     const r = res.body.getReader(), dec = new TextDecoder(); let b = "";
-    while (true) { const { value, done } = await r.read(); if (done) break; b += dec.decode(value, { stream: true }); const ls = b.split("\n"); b = ls.pop() || ""; for (const ln of ls) { const s = ln.trim(); if (!s.startsWith("data:")) continue; const dt = s.slice(5).trim(); if (dt === "[DONE]") continue; try { const o = JSON.parse(dt); if (o.choices?.[0]?.delta?.content) { full += o.choices[0].delta.content; if (full.length > INSTANT_TW_LEN) { oe.textContent = full; if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null; } if (twResolve) { twResolve(); twResolve = null; } } else if (!typewriterTimer) startTypewrite(); } if (o.usage) usage = o.usage; } catch { parseErrors++; } } }
+    while (true) {
+      const { value, done } = await r.read(); if (done) break;
+      b += dec.decode(value, { stream: true });
+      const ls = b.split("\n"); b = ls.pop() || "";
+      for (const ln of ls) {
+        const s = ln.trim();
+        if (!s.startsWith("data:")) continue;
+        const dt = s.slice(5).trim();
+        if (dt === "[DONE]") continue;
+        try {
+          const o = JSON.parse(dt);
+          if (o.choices?.[0]?.delta?.content) {
+            gotData = true;
+            full += o.choices[0].delta.content;
+            if (full.length > INSTANT_TW_LEN) { oe.textContent = full; if (twTimer) { clearTimeout(twTimer); twTimer = null; } if (twResolve) { twResolve(); twResolve = null; } }
+            else if (!twTimer) typewrite();
+          } else { gotData = true; }
+          if (o.usage) usage = o.usage;
+        } catch { parseErrors++; }
+      }
+    }
     if (parseErrors > 0) toast("部分数据解析异常");
     await twPromise;
     if (dir === "vi2zh") { const m = full.split(/\n\s*-{3,}\s*\n/); c.out = m[0].trim(); if (m[1]) c.note = m[1].trim(); } else { c.out = full.trim(); }
-    if (!c.out) throw new Error("无返回内容"); const co = costOf(usage); if (co) { c.costCny = co.cny; c.costTokens = co.tokens; } cards.push(c); saveCards();
-    const newEl = cardEl(c); el.replaceWith(newEl); if (bubbleEl) { const nb = newEl.querySelector(".bubble"); if (nb) nb.classList.remove("translating"); } addUsage(co);
-    // 自动推到灵动岛
-    // 仅在 OnePlus/ColorOS 设备上自动推到灵动岛
-    if (hasBridge && !c.err && isOnePlus()) { AndroidBridge.showLiveUpdate(t, c.out, dir); }
-    // Web Notification → OnePlus 灵动岛
-    if (!c.err && c.out) showNotify(t, c.out, dir);
-  } catch (err) { if (err.name !== "AbortError") { c.err = true; c.out = "⚠ " + (err.message === "Failed to fetch" ? "网络连不上" : err.message); const errEl = cardEl(c); el.replaceWith(errEl); $("#input").value = t; $("#input").focus(); } }
-  finally { clearTimeout(timeoutId); chatAbort = null; if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null; } busy = false; sb.disabled = false; sb.classList.add("idle"); const cl2 = $("#chatTab").querySelector(".chat-list"); cl2.scrollTop = cl2.scrollHeight; }
+    if (!c.out) throw new Error("无返回内容");
+    const co = costOf(usage); if (co) { c.costCny = co.cny; c.costTokens = co.tokens; }
+    c.status = "done";
+    cards.push(c); saveCards();
+    const newEl = cardEl(c); el.replaceWith(newEl);
+    addUsage(co);
+    if (hasBridge && isOnePlus()) AndroidBridge.showLiveUpdate(c.src, c.out, dir);
+    if (c.out) showNotify(c.src, c.out, dir);
+  } catch (err) {
+    const job = activeJobs.get(c.id);
+    canceledByUser = job?.canceledByUser || false;
+    if (err.name === "AbortError") {
+      c.status = canceledByUser ? "canceled" : "error";
+      c.out = canceledByUser ? "已取消翻译" : "⏱ 响应超时,请重试";
+    } else {
+      c.status = "error";
+      c.out = "⚠ " + (err.message === "Failed to fetch" ? "网络连不上" : err.message);
+    }
+    const errEl = cardEl(c); el.replaceWith(errEl);
+    if (c.status === "error" && !canceledByUser) {
+      const inp = $("#input");
+      if (inp && !inp.value.trim()) { inp.value = c.src; updateInputUI(); }
+    }
+  } finally {
+    clearTimeout(totalTimeout); clearTimeout(firstByteTimeout);
+    if (twTimer) { clearTimeout(twTimer); twTimer = null; }
+    if (twResolve) { twResolve(); twResolve = null; }
+    activeJobs.delete(c.id);
+  }
 }
 
 // ═══ 阅读模式 (v0.98 优化版) ═══
@@ -504,21 +645,26 @@ async function translateRead() {
   const d = computeDirection(t); const dir = d.dir; ["pasteGo", "readGo", "readClear"].forEach(i => $("#" + i).disabled = true);
   const oe = $("#readOut"), de = $("#readDir"), cb = $("#readCopy"); oe.classList.remove("placeholder", "err"); oe.classList.add("typing-cursor"); oe.textContent = "";
   de.style.display = ""; cb.style.display = "none"; de.textContent = dirLabel(dir); de.classList.toggle("rev", !isComposing(dir));
-  let full = "", usage = null, parseErrors = 0;
+  let full = "", usage = null, parseErrors = 0, gotData = false;
   if (readAbort) { readAbort.abort(); readAbort = null; }
   readAbort = new AbortController(); const timeoutId = setTimeout(() => readAbort.abort(), 60000);
+  const firstByteTimeout = setTimeout(() => { if (!gotData) readAbort.abort(); }, 15000);
   try {
     busy = true;
     const res = await fetch(API_BASE + "/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + getKey() }, signal: readAbort.signal, body: JSON.stringify({ model: MODELS[setting.model].name, messages: [{ role: "system", content: readPrompt(dir) }, { role: "user", content: t }], temperature: 0.1, thinking: { type: setting.thinkMode === "deep" ? "enabled" : "disabled" }, max_tokens: 4096, frequency_penalty: 0.1, stream: true, stream_options: { include_usage: true } }) });
     if (!res.ok) { let m = "HTTP " + res.status; if (res.status === 401) m = "API Key 无效"; else if (res.status === 402) m = "余额不足"; else if (res.status === 403) m = "权限不足"; else if (res.status === 429) m = "请求过于频繁请稍后"; else if (res.status === 500) m = "服务器错误"; else if (res.status === 503) m = "服务暂时不可用"; throw new Error(m); }
     const r = res.body.getReader(), dec = new TextDecoder(); let b = "";
-    while (true) { const { value, done } = await r.read(); if (done) break; b += dec.decode(value, { stream: true }); const ls = b.split("\n"); b = ls.pop() || ""; for (const ln of ls) { const s = ln.trim(); if (!s.startsWith("data:")) continue; const dt = s.slice(5).trim(); if (dt === "[DONE]") continue; try { const o = JSON.parse(dt); if (o.choices?.[0]?.delta?.content) full += o.choices[0].delta.content; if (o.usage) usage = o.usage; oe.textContent = full; } catch { parseErrors++; } } }
+    while (true) { const { value, done } = await r.read(); if (done) break; b += dec.decode(value, { stream: true }); const ls = b.split("\n"); b = ls.pop() || ""; for (const ln of ls) { const s = ln.trim(); if (!s.startsWith("data:")) continue; const dt = s.slice(5).trim(); if (dt === "[DONE]") continue; try { const o = JSON.parse(dt); gotData = true; if (o.choices?.[0]?.delta?.content) full += o.choices[0].delta.content; if (o.usage) usage = o.usage; oe.textContent = full; } catch { parseErrors++; } } }
     if (parseErrors > 0) toast("部分数据解析异常");
     oe.classList.remove("typing-cursor"); cb.style.display = ""; if (!full.trim()) { oe.classList.add("err"); oe.textContent = "无返回内容"; }
     if (usage) { const co = costOf(usage); if (co) addUsage(co); }
     if (full.trim()) showNotify(t, full.trim(), dir);
-  } catch (e) { if (e.name !== "AbortError") { oe.classList.remove("typing-cursor"); oe.classList.add("err"); oe.textContent = "⚠ " + (e.message === "Failed to fetch" ? "网络连不上" : e.message); } }
-  finally { clearTimeout(timeoutId); readAbort = null; busy = false; ["pasteGo", "readGo", "readClear"].forEach(i => $("#" + i).disabled = false); }
+  } catch (e) {
+    oe.classList.remove("typing-cursor"); oe.classList.add("err");
+    if (e.name === "AbortError") oe.textContent = "⏱ 响应超时,请重试";
+    else oe.textContent = "⚠ " + (e.message === "Failed to fetch" ? "网络连不上" : e.message);
+  }
+  finally { clearTimeout(timeoutId); clearTimeout(firstByteTimeout); readAbort = null; busy = false; ["pasteGo", "readGo", "readClear"].forEach(i => $("#" + i).disabled = false); }
 }
 
 // ═══ Tab 切换 (适配新 CSS 类名) ═══
@@ -665,6 +811,22 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener("scroll", handleViewport);
 }
 
+// ═══ 更新提示弹窗 ═══
+function checkUpdate() {
+  const last = store.load("lastVersion", "");
+  if (last === APP_VERSION) return;
+  const upd = UPDATE_LOG[UPDATE_LOG.length - 1];
+  if (!upd) return;
+  const m = $("#updateModal"); if (!m) return;
+  $("#updateTitle").textContent = upd.title || "有新更新";
+  $("#updateVer").textContent = "版本 " + upd.version;
+  $("#updateItems").innerHTML = upd.items.map(it => "<li>" + it + "</li>").join("");
+  m.classList.add("open");
+}
+$("#updateOk").onclick = () => { const m = $("#updateModal"); if (m) m.classList.remove("open"); store.save("lastVersion", APP_VERSION); };
+$("#cardMenuClose").onclick = closeCardMenu;
+$("#cardMenu").addEventListener("click", e => { if (e.target === $("#cardMenu")) closeCardMenu(); });
+
 // ═══ 新手引导 ═══
 const wizard = $("#wizard");
 let wizardSkipped = store.load("wizardSkipped", false);
@@ -692,6 +854,7 @@ $("#wizSkip2").onclick = skipWizard;
   startWizard();
   bindFloatChip();
   bindLangModelSettings();
+  checkUpdate();
   handleUrlParams();
   requestNotify();
   // Service Worker 通知点击回填

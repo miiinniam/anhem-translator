@@ -444,6 +444,32 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
   #wizard .box { padding: 22px 18px; border-radius: var(--radius-lg) var(--radius-lg) 0 0; width: 100%; max-width: 100%; max-height: 90vh; overflow-y: auto; }
 }
 
+/* ═══ 更新弹窗 ═══ */
+#updateModal { position: fixed; inset: 0; z-index: 60; background: var(--mask-bg); display: none; align-items: center; justify-content: center; padding: 20px; }
+#updateModal.open { display: flex; }
+#updateModal .box { background: var(--surface-high); border-radius: var(--radius-lg); padding: 30px 26px; width: 380px; max-width: 94vw; box-shadow: var(--shadow-md); text-align: center; animation: modalPop .45s var(--ease-spring); }
+@keyframes modalPop { from { opacity: 0; transform: scale(.85) translateY(14px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.upd-badge { font-size: 40px; margin-bottom: 8px; }
+#updateModal h2 { font-family: var(--font-display); font-size: 24px; color: var(--accent); font-weight: 400; margin-bottom: 2px; }
+.upd-ver { font-size: var(--text-caption); color: var(--ink-tertiary); margin-bottom: 14px; }
+#updateItems { list-style: none; text-align: left; margin-bottom: 18px; }
+#updateItems li { font-size: var(--text-body-sm); color: var(--ink-secondary); line-height: 1.7; padding: 7px 0; border-bottom: 1px solid var(--divider); }
+#updateItems li:last-child { border-bottom: none; }
+
+/* ═══ 卡片长按菜单 ═══ */
+#cardMenu { position: fixed; inset: 0; z-index: 55; background: var(--mask-bg); display: none; align-items: flex-end; }
+#cardMenu.open { display: flex; }
+#cardMenu .menu-body { width: 100%; background: var(--surface-high); border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 10px 0 calc(18px + env(safe-area-inset-bottom, 0px)); box-shadow: var(--shadow-md); animation: sheetUp .35s var(--ease-spring); }
+@keyframes sheetUp { from { transform: translateY(60%); opacity: .4; } to { transform: translateY(0); opacity: 1; } }
+.menu-title { text-align: center; font-size: var(--text-caption); color: var(--ink-tertiary); text-transform: uppercase; letter-spacing: .6px; padding: 6px 0 10px; }
+.menu-src { padding: 2px 24px 10px; font-size: var(--text-body-sm); color: var(--ink-secondary); max-height: 72px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.menu-item { display: flex; align-items: center; gap: 10px; width: 100%; border: none; background: transparent; color: var(--ink); font-size: var(--text-body); padding: 14px 24px; text-align: left; cursor: pointer; min-height: 52px; }
+.menu-item:hover { background: var(--accent-softer); }
+.menu-item:active { background: var(--accent-soft); }
+.menu-item.danger { color: var(--red); }
+.menu-item .mi-icon { font-size: 18px; width: 24px; text-align: center; }
+.menu-cancel { width: 100%; border: none; background: transparent; color: var(--ink-secondary); font-size: var(--text-body); padding: 14px; cursor: pointer; min-height: 48px; border-top: 1px solid var(--divider); margin-top: 6px; }
+
 /* ═══ Toast ═══ */
 #toastContainer { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column; gap: var(--space-sm); pointer-events: none; align-items: center; }
 .toast {
@@ -758,6 +784,27 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
 </div>
 
 <div id="toastContainer"></div>
+
+<!-- 更新提示弹窗 -->
+<div id="updateModal">
+  <div class="box">
+    <div class="upd-badge">✨</div>
+    <h2 id="updateTitle">有新更新</h2>
+    <div class="upd-ver" id="updateVer"></div>
+    <ul id="updateItems"></ul>
+    <button class="wbtn" id="updateOk">开始使用</button>
+  </div>
+</div>
+
+<!-- 卡片长按菜单 -->
+<div id="cardMenu">
+  <div class="menu-body">
+    <div class="menu-title">长按操作</div>
+    <div class="menu-src" id="cardMenuSrc"></div>
+    <div id="cardMenuItems"></div>
+    <button class="menu-cancel" id="cardMenuClose">取消</button>
+  </div>
+</div>
 
 <!-- 浮动翻译芯片 -->
 <div id="floatChip" class="float-chip hidden">

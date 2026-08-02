@@ -1,5 +1,5 @@
 // anhem v0.99 Service Worker
-const CACHE = "anhem-v099c-" + Date.now();
+const CACHE = "anhem-v099d-" + Date.now();
 
 self.addEventListener("install", e => {
   e.waitUntil(
