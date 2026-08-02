@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <title>anhem · 越南语翻译器</title>
 <style>
-/* ═══ anhem v0.98 — 极简奢华 · 文化桥梁 ═══ */
+/* ═══ anhem v0.99 — 极简奢华 · 文化桥梁 ═══ */
 
 /* ── Design Tokens ── */
 :root {
@@ -580,6 +580,24 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
       <div id="keyStatus" style="padding:0 16px 12px;font-size:var(--text-body-sm);"></div>
     </div>
     <div class="settings-section">
+      <div class="settings-section-header">翻译模型</div>
+      <div class="settings-row">
+        <span class="row-label">模型</span>
+        <div class="settings-radio-group" id="modelGroup" style="flex-wrap:wrap;justify-content:flex-end">
+          <label class="settings-radio"><input type="radio" name="model" value="flash">Flash 快速</label>
+          <label class="settings-radio"><input type="radio" name="model" value="pro">Pro 高质量</label>
+        </div>
+      </div>
+      <div class="settings-row">
+        <span class="row-label">思考模式</span>
+        <div class="settings-radio-group" id="thinkGroup" style="flex-wrap:wrap">
+          <label class="settings-radio"><input type="radio" name="thinkMode" value="fast">快速响应</label>
+          <label class="settings-radio"><input type="radio" name="thinkMode" value="deep">深度思考(慢)</label>
+        </div>
+      </div>
+      <div style="padding:4px 16px 12px;font-size:var(--text-caption);color:var(--ink-secondary);">默认「快速响应」= 关闭思考模式,翻译速度大幅提升。复杂长文可切「深度思考」。</div>
+    </div>
+    <div class="settings-section">
       <div class="settings-section-header">我的资料</div>
       <div class="settings-row">
         <span class="row-label">性别</span>
@@ -592,6 +610,27 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
         <span class="row-label">年龄</span>
         <input type="number" id="myAge" min="10" max="99" placeholder="如 32">
       </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-header">语言设置</div>
+      <div class="settings-row">
+        <span class="row-label">我的母语</span>
+        <div class="settings-radio-group" id="nativeLangGroup" style="flex-wrap:wrap;justify-content:flex-end">
+          <label class="settings-radio"><input type="radio" name="nativeLang" value="zh">中文</label>
+          <label class="settings-radio"><input type="radio" name="nativeLang" value="vi">越南语</label>
+          <label class="settings-radio"><input type="radio" name="nativeLang" value="en">英语</label>
+          <label class="settings-radio"><input type="radio" name="nativeLang" value="ja">日语</label>
+          <label class="settings-radio"><input type="radio" name="nativeLang" value="ko">韩语</label>
+          <label class="settings-radio"><input type="radio" name="nativeLang" value="th">泰语</label>
+          <label class="settings-radio"><input type="radio" name="nativeLang" value="ru">俄语</label>
+          <label class="settings-radio"><input type="radio" name="nativeLang" value="ar">阿拉伯语</label>
+          <label class="settings-radio"><input type="radio" name="nativeLang" value="fr">法语</label>
+          <label class="settings-radio"><input type="radio" name="nativeLang" value="de">德语</label>
+          <label class="settings-radio"><input type="radio" name="nativeLang" value="es">西班牙语</label>
+          <label class="settings-radio"><input type="radio" name="nativeLang" value="pt">葡萄牙语</label>
+        </div>
+      </div>
+      <div style="padding:4px 16px 12px;font-size:var(--text-caption);color:var(--ink-secondary);">输入其他语言会自动翻译成母语;输入母语则翻译成越南语(给对方发消息)。</div>
     </div>
     <div class="settings-section">
       <div class="settings-section-header">越南语方言</div>
@@ -646,7 +685,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
       </div>
     </div>
     <div class="settings-footer">
-      <p>anhem 越南语翻译器 · v0.98</p>
+      <p>anhem 越南语翻译器 · v0.99</p>
       <p style="margin-top:2px"><a href="https://platform.deepseek.com" target="_blank" rel="noopener noreferrer">DeepSeek 驱动</a></p>
     </div>
   </section>
