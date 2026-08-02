@@ -1,5 +1,5 @@
 // anhem v0.99 Service Worker
-const CACHE = "anhem-v099-" + Date.now();
+const CACHE = "anhem-v099b-" + Date.now();
 
 self.addEventListener("install", e => {
   e.waitUntil(
@@ -18,8 +18,21 @@ self.addEventListener("activate", e => {
 });
 
 self.addEventListener("fetch", e => {
+  const req = e.request;
+  // 页面导航:network-first —— 保证每次打开都拿到最新版,不再被旧缓存卡住
+  if (req.mode === "navigate") {
+    e.respondWith(
+      fetch(req).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put("./index.html", copy));
+        return res;
+      }).catch(() => caches.match("./index.html"))
+    );
+    return;
+  }
+  // 静态资源:cache-first(缓存名带版本号,更新时自动换新)
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match("./index.html")))
+    caches.match(req).then(r => r || fetch(req).catch(() => caches.match("./index.html")))
   );
 });
 
