@@ -7,7 +7,7 @@ const API_BASE = "https://api.deepseek.com";
 const TYPEWRITER_SPEED = 6;
 const INSTANT_TW_LEN = 600;
 // ═══ 版本与更新日志(每次发版 bump 版本号 + 写更新说明,客户端自动弹窗)═══
-const APP_VERSION = "0.99.1";
+const APP_VERSION = "0.99.2";
 const UPDATE_LOG = [
   { version: "0.99.1", title: "v0.99.1 更新来了", items: [
     "💬 支持同时翻译多句(最多 3 句),一句卡住不影响其他句",
@@ -15,6 +15,10 @@ const UPDATE_LOG = [
     "🛡 防卡死:15 秒无响应自动提示超时",
     "🪟 新增更新提示弹窗",
     "🛠 修复灵动岛激活导致的白色竖条"
+  ]},
+  { version: "0.99.2", title: "v0.99.2 更新来了", items: [
+    "📜 长文本整段翻译,不再自动拆成多条消息",
+    "✨ 一段话只出一张卡片,复制一次就够"
   ]}
 ];
 // 活跃翻译任务: cardId -> { controller, canceledByUser }
@@ -505,15 +509,7 @@ function buildMessages(t, dir) {
   ms.push({ role: "user", content: "方向:" + dirLabel(dir) + "\n<|text|>\n" + t + "\n</|text|>\n只输出译文" }); return ms;
 }
 
-// ═══ 聊天翻译(支持多句并发 ≤3,防卡死)═══
-function splitSentences(t) {
-  let parts = t.split(/\n+/).map(s => s.trim()).filter(Boolean);
-  if (parts.length <= 1) {
-    parts = t.split(/(?<=[。！？!?；;])\s*/).map(s => s.trim()).filter(Boolean);
-  }
-  if (parts.length > 3) { toast("一次最多同时翻译 3 句,已取前 3 句"); parts = parts.slice(0, 3); }
-  return parts;
-}
+// ═══ 聊天翻译(整段翻译,防卡死)═══
 function startTranslate(texts) {
   const sb = $("#sendBtn");
   const emptyEl = document.querySelector(".empty-state"); if (emptyEl) emptyEl.remove();
@@ -538,9 +534,8 @@ async function translate() {
   const t = $("#input").value.trim();
   if (!t || busy) { if (!t && !busy) { const inp = $("#input"); inp.classList.add("shaking"); inp.addEventListener("animationend", () => inp.classList.remove("shaking"), { once: true }); toast("请输入文本", "error"); } return; }
   if (!getKey() || !profile) { startWizard(); return; }
-  const parts = splitSentences(t);
   $("#input").value = ""; $("#input").style.height = "auto"; $("#input").blur();
-  startTranslate(parts);
+  startTranslate([t]);
 }
 // 单句翻译:独立 AbortController / 首字节15s超时 / 总超时60s / 用户可取消
 async function doTranslateSentence({ c, el, oe }) {
@@ -562,7 +557,7 @@ async function doTranslateSentence({ c, el, oe }) {
   const firstByteTimeout = setTimeout(() => { if (!gotData) controller.abort(); }, 15000);
   let canceledByUser = false;
   try {
-    const res = await fetch(API_BASE + "/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + getKey() }, signal: controller.signal, body: JSON.stringify({ model: MODELS[setting.model].name, messages: buildMessages(c.src, dir), temperature: 0.2, thinking: { type: setting.thinkMode === "deep" ? "enabled" : "disabled" }, max_tokens: 2048, frequency_penalty: 0.15, stream: true, stream_options: { include_usage: true } }) });
+    const res = await fetch(API_BASE + "/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + getKey() }, signal: controller.signal, body: JSON.stringify({ model: MODELS[setting.model].name, messages: buildMessages(c.src, dir), temperature: 0.2, thinking: { type: setting.thinkMode === "deep" ? "enabled" : "disabled" }, max_tokens: 4096, frequency_penalty: 0.15, stream: true, stream_options: { include_usage: true } }) });
     if (!res.ok) { let m = "HTTP " + res.status; if (res.status === 401) m = "API Key 无效"; else if (res.status === 402) m = "余额不足"; else if (res.status === 403) m = "权限不足"; else if (res.status === 429) m = "请求过于频繁请稍后"; else if (res.status === 500) m = "服务器错误"; else if (res.status === 503) m = "服务暂时不可用"; throw new Error(m); }
     const r = res.body.getReader(), dec = new TextDecoder(); let b = "";
     while (true) {
