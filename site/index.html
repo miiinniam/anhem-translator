@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>anhem · 越南语翻译器 — 越过语言的墙</title>
+<meta name="description" content="anhem 越南语翻译器：中越双语即时翻译，8 种身份语气，灵动岛通知。Android / Windows 下载，在线使用。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A0A0C'/%3E%3Ctext x='32' y='44' font-size='36' text-anchor='middle'%3E%F0%9F%92%97%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============ tokens ============ */
+:root {
+  --bg: #0A0A0C;
+  --surface: #131316;
+  --surface-2: #1A1A1F;
+  --line: rgba(245, 242, 236, 0.08);
+  --line-strong: rgba(245, 242, 236, 0.16);
+  --ink: #F5F2EC;
+  --ink-dim: #F5F2ECCC;
+  --muted: #9A968E;
+  --faint: #6B6863;
+  --red: #E8503A;        /* 主 accent：越南红，沉稳 */
+  --red-soft: #E8503A1A;
+  --gold: #E8B84B;       /* 次 accent：星黄，克制 */
+  --gold-soft: #E8B84B14;
+  --green: #58B28E;
+  --green-soft: #58B28E14;
+  --serif: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  --sans: 'Manrope', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html { scroll-behavior:smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+::selection { background: var(--red); color:#fff; }
+a { color: inherit; text-decoration:none; }
+img { max-width:100%; display:block; }
+
+/* ============ ambient bg ============ */
+.bg-orb {
+  position: fixed; inset:0; z-index:-2; pointer-events:none;
+  background:
+    radial-gradient(900px 500px at 85% -10%, rgba(232,80,58,0.10), transparent 60%),
+    radial-gradient(700px 420px at -10% 30%, rgba(232,184,75,0.05), transparent 55%),
+    var(--bg);
+}
+.bg-grid {
+  position: fixed; inset:0; z-index:-1; pointer-events:none; opacity:.5;
+  background-image:
+    linear-gradient(rgba(245,242,236,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,242,236,0.025) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 30%, transparent 75%);
+}
+
+/* ============ nav ============ */
+nav {
+  position: sticky; top:0; z-index:50;
+  backdrop-filter: blur(16px);
+  background: rgba(10,10,12,0.72);
+  border-bottom: 1px solid var(--line);
+}
+.nav-inner {
+  max-width: 1080px; margin: 0 auto; padding: 14px 24px;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+}
+.brand { display:flex; align-items:center; gap:11px; }
+.brand-mark {
+  width:36px; height:36px; border-radius:11px;
+  background: linear-gradient(135deg, var(--red), #B8322A);
+  display:flex; align-items:center; justify-content:center;
+  font-size:17px; box-shadow: 0 6px 20px rgba(232,80,58,0.28);
+}
+.brand-name { font-weight:800; font-size:16px; letter-spacing:.02em; }
+.brand-sub { font-size:10px; color:var(--muted); letter-spacing:.22em; text-transform:uppercase; margin-top:1px; }
+.nav-links { display:flex; align-items:center; gap:6px; }
+.nav-links a { font-size:13.5px; color:var(--muted); padding:8px 13px; border-radius:9px; transition:all .18s; }
+.nav-links a:hover { color:var(--ink); background:rgba(245,242,236,0.05); }
+.nav-cta {
+  font-size:13.5px; font-weight:700; color:#fff;
+  background: var(--red); padding:9px 17px; border-radius:10px;
+  transition: all .18s; box-shadow: 0 4px 16px rgba(232,80,58,0.25);
+}
+.nav-cta:hover { transform:translateY(-1px); box-shadow:0 8px 24px rgba(232,80,58,0.38); }
+
+/* ============ hero ============ */
+.hero {
+  max-width: 1080px; margin: 0 auto;
+  padding: 84px 24px 40px;
+  display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px;
+  align-items: center;
+}
+.hero-eyebrow {
+  display:inline-flex; align-items:center; gap:8px;
+  font-size:12px; color:var(--green);
+  background: var(--green-soft); border:1px solid rgba(88,178,142,0.2);
+  padding:6px 13px; border-radius:999px; margin-bottom:22px;
+  letter-spacing:.04em;
+}
+.hero-eyebrow .dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation: pulse 2.2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+.hero h1 {
+  font-family: var(--serif);
+  font-size: clamp(38px, 5.2vw, 58px);
+  font-weight: 900;
+  line-height: 1.16;
+  letter-spacing: .01em;
+}
+.hero h1 .vi { color: var(--red); }
+.hero h1 .thin { color: var(--ink-dim); font-weight: 500; }
+.hero-sub {
+  margin-top: 20px; font-size: 16px; color: var(--muted);
+  max-width: 470px; line-height: 1.9;
+}
+.hero-sub b { color: var(--ink); font-weight:600; }
+.hero-actions { display:flex; gap:12px; margin-top:32px; flex-wrap:wrap; }
+.btn {
+  display:inline-flex; align-items:center; gap:9px;
+  font-size:15px; font-weight:700; padding:14px 26px; border-radius:13px;
+  transition: all .2s; cursor:pointer; border:none;
+}
+.btn-primary { background: var(--red); color:#fff; box-shadow:0 8px 28px rgba(232,80,58,0.3); }
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 14px 36px rgba(232,80,58,0.42); }
+.btn-ghost { background: var(--surface-2); color: var(--ink); border:1px solid var(--line-strong); }
+.btn-ghost:hover { background: #222228; transform:translateY(-2px); }
+.btn svg { width:17px; height:17px; }
+.hero-stats { display:flex; gap:30px; margin-top:38px; flex-wrap:wrap; }
+.hero-stat { display:flex; flex-direction:column; }
+.hero-stat b { font-size:20px; font-weight:800; color:var(--ink); }
+.hero-stat span { font-size:11.5px; color:var(--faint); letter-spacing:.06em; margin-top:2px; }
+
+/* ============ hero demo card（signature） ============ */
+.demo-card {
+  position:relative;
+  background: linear-gradient(170deg, var(--surface), #101014 70%);
+  border: 1px solid var(--line-strong);
+  border-radius: 22px;
+  padding: 26px 22px 22px;
+  box-shadow: 0 40px 90px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.demo-head { display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+.demo-dots { display:flex; gap:6px; }
+.demo-dots i { width:10px; height:10px; border-radius:50%; background:var(--surface-2); border:1px solid var(--line-strong); }
+.demo-dots i:first-child { background:#E8503A66; }
+.demo-title { font-size:12px; color:var(--faint); letter-spacing:.1em; text-transform:uppercase; margin-left:4px; }
+.demo-status { margin-left:auto; font-size:11px; color:var(--green); display:flex; align-items:center; gap:6px; }
+.demo-status .dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+
+.demo-stage { display:flex; flex-direction:column; gap:12px; min-height: 300px; }
+.bubble { max-width:88%; padding:12px 16px; border-radius:16px; font-size:14.5px; line-height:1.65; opacity:0; transform:translateY(10px); transition: opacity .5s, transform .5s; }
+.bubble.show { opacity:1; transform:none; }
+.bubble.zh { align-self:flex-end; background:linear-gradient(135deg,#2A2A30,#232329); color:var(--ink); border-bottom-right-radius:5px; }
+.bubble.vi { align-self:flex-start; background:var(--red-soft); border:1px solid rgba(232,80,58,0.22); color:var(--ink); border-bottom-left-radius:5px; }
+.bubble .lang { display:block; font-size:10px; color:var(--faint); margin-bottom:3px; letter-spacing:.14em; text-transform:uppercase; }
+.bubble.vi .lang { color:var(--red); }
+.bubble .caret { display:inline-block; width:2px; height:1.05em; background:var(--red); vertical-align:-0.18em; margin-left:1px; animation: blink 0.9s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.demo-foot { margin-top:16px; padding-top:14px; border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; font-size:11.5px; color:var(--faint); }
+.demo-foot .vi-word { font-family: var(--serif); color:var(--gold); font-weight:600; letter-spacing:.06em; }
+
+/* ============ section shell ============ */
+.section { max-width:1080px; margin:0 auto; padding:70px 24px; }
+.section-head { max-width:640px; margin-bottom:44px; }
+.eyebrow { font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--red); font-weight:700; margin-bottom:14px; }
+.section h2 { font-family:var(--serif); font-size:clamp(27px,3.4vw,36px); font-weight:800; line-height:1.3; }
+.section .lead { color:var(--muted); font-size:15px; margin-top:14px; line-height:1.85; }
+
+/* ============ 名字故事 ============ */
+.name-story { display:grid; grid-template-columns: 1fr 1.2fr; gap:60px; align-items:center; }
+.name-vi {
+  font-family: var(--serif);
+  font-size: clamp(64px, 8vw, 96px);
+  font-weight: 900;
+  line-height: 1;
+  display:flex; gap:18px; align-items:baseline;
+}
+.name-vi span { display:inline-block; }
+.name-vi .anh { color: var(--red); position:relative; }
+.name-vi .em { color: var(--gold); }
+.name-vi .slash { color: var(--faint); font-weight:500; font-size:.6em; }
+.name-vi .heart { animation: heartbeat 1.8s ease-in-out infinite; display:inline-block; font-size:.5em; }
+@keyframes heartbeat { 0%,100%{transform:scale(1)} 25%{transform:scale(1.18)} 40%{transform:scale(.96)} 60%{transform:scale(1.1)} }
+.name-copy p { color:var(--muted); font-size:15.5px; line-height:2; margin-bottom:18px; }
+.name-copy p b { color:var(--ink); }
+.name-copy .vi-line { color:var(--ink); font-family:var(--serif); font-size:16.5px; }
+
+/* ============ 场景 ============ */
+.scenes { display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; }
+.scene {
+  background: var(--surface); border:1px solid var(--line);
+  border-radius:18px; padding:24px 20px;
+  transition: transform .25s, border-color .25s;
+}
+.scene:hover { transform:translateY(-4px); border-color:var(--line-strong); }
+.scene-tag { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.scene-tag::before { content:''; width:14px; height:1px; background:var(--line-strong); }
+.scene h3 { font-size:16.5px; font-weight:800; margin-bottom:6px; font-family:var(--serif); }
+.scene p { font-size:13px; color:var(--muted); margin-bottom:16px; line-height:1.75; }
+.scene-demo { display:flex; flex-direction:column; gap:8px; }
+.scene-demo .mini { max-width:92%; padding:9px 13px; border-radius:12px; font-size:13px; line-height:1.6; }
+.mini.zh { align-self:flex-end; background:#26262C; color:var(--ink); border-bottom-right-radius:4px; }
+.mini.vi { align-self:flex-start; background:var(--red-soft); border:1px solid rgba(232,80,58,0.18); border-bottom-left-radius:4px; }
+.mini .lang { display:block; font-size:9.5px; color:var(--faint); letter-spacing:.12em; margin-bottom:2px; }
+.mini.vi .lang { color:var(--red); }
+
+/* ============ 功能 ============ */
+.features { display:grid; grid-template-columns: repeat(2, 1fr); gap:14px 40px; }
+.feature { display:flex; gap:16px; align-items:flex-start; padding:20px 0; border-bottom:1px solid var(--line); }
+.feature:last-child { border-bottom:none; }
+.feature-num { font-family:var(--serif); font-size:13px; color:var(--red); font-weight:700; min-width:30px; padding-top:4px; }
+.feature h3 { font-size:16px; font-weight:700; margin-bottom:5px; }
+.feature p { font-size:13.5px; color:var(--muted); line-height:1.75; }
+
+/* ============ 下载 ============ */
+.downloads { display:grid; grid-template-columns: repeat(2,1fr); gap:18px; }
+.dl-card {
+  background: linear-gradient(170deg, var(--surface), #111114 72%);
+  border:1px solid var(--line-strong); border-radius:20px; padding:30px 28px;
+  display:flex; flex-direction:column; position:relative; overflow:hidden;
+  transition: transform .25s, border-color .25s;
+}
+.dl-card:hover { transform:translateY(-4px); border-color: rgba(232,80,58,0.35); }
+.dl-card::before {
+  content:''; position:absolute; top:0; right:0; width:220px; height:220px;
+  border-radius:50%; filter:blur(60px); opacity:.5; pointer-events:none;
+}
+.dl-card.android::before { background:rgba(88,178,142,0.14); }
+.dl-card.windows::before { background:rgba(232,80,58,0.14); }
+.dl-icon { width:46px; height:46px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:18px; }
+.dl-card.android .dl-icon { background:var(--green-soft); }
+.dl-card.windows .dl-icon { background:var(--red-soft); }
+.dl-version {
+  position:absolute; top:26px; right:24px;
+  font-size:11px; font-weight:700; padding:5px 12px; border-radius:999px;
+  background:var(--green-soft); color:var(--green); border:1px solid rgba(88,178,142,0.22);
+}
+.dl-card h3 { font-size:19px; font-weight:800; font-family:var(--serif); }
+.dl-card .desc { font-size:13.5px; color:var(--muted); margin:8px 0 22px; line-height:1.8; flex:1; }
+.dl-meta { display:flex; gap:22px; margin-bottom:20px; font-size:12px; color:var(--faint); }
+.dl-meta div { display:flex; flex-direction:column; }
+.dl-meta b { color:var(--ink); font-size:13.5px; font-weight:700; margin-bottom:2px; }
+.dl-btns { display:flex; gap:10px; flex-wrap:wrap; }
+.dl-btn {
+  flex:1; min-width:130px; text-align:center;
+  padding:13px 18px; border-radius:12px; font-size:14px; font-weight:700;
+  transition: all .2s; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+}
+.dl-btn svg { width:16px; height:16px; }
+.dl-btn.solid { background:var(--red); color:#fff; box-shadow:0 6px 20px rgba(232,80,58,0.25); }
+.dl-btn.solid:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(232,80,58,0.38); }
+.dl-btn.outline { background:var(--surface-2); border:1px solid var(--line-strong); color:var(--ink); }
+.dl-btn.outline:hover { background:#232329; transform:translateY(-2px); }
+.dl-note { text-align:center; font-size:12px; color:var(--faint); margin-top:26px; }
+
+/* ============ 在线使用 ============ */
+.online-wrap { background:var(--surface); border:1px solid var(--line-strong); border-radius:20px; padding:34px; }
+.online-head { display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:22px; }
+.online-head h3 { font-family:var(--serif); font-size:20px; font-weight:800; }
+.online-head p { color:var(--muted); font-size:13.5px; margin-top:5px; }
+.online-frame { border-radius:14px; overflow:hidden; border:1px solid var(--line); background:#0D0D0F; height:520px; }
+.online-frame iframe { width:100%; height:100%; border:none; }
+
+/* ============ 更新日志 ============ */
+.log-card { background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:30px 32px; }
+.log-card .log-meta { display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+.log-card .log-tag { font-size:12px; font-weight:800; color:var(--gold); background:var(--gold-soft); padding:5px 12px; border-radius:999px; border:1px solid rgba(232,184,75,0.2); }
+.log-card .log-date { font-size:12px; color:var(--faint); }
+.log-card #changelog { font-size:14px; color:var(--muted); line-height:2; }
+.log-card #changelog .log-h { color:var(--ink); font-weight:700; font-size:15px; margin-top:14px; }
+.log-empty { color:var(--faint); font-size:14px; text-align:center; padding:26px 0; }
+
+/* ============ footer ============ */
+footer { border-top:1px solid var(--line); margin-top:30px; }
+.foot-inner { max-width:1080px; margin:0 auto; padding:34px 24px; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+.foot-brand { display:flex; align-items:center; gap:10px; font-size:13px; color:var(--muted); }
+.foot-links { display:flex; gap:22px; font-size:12.5px; color:var(--faint); }
+.foot-links a:hover { color:var(--ink); }
+.foot-vi { font-family:var(--serif); color:var(--faint); font-size:11px; letter-spacing:.08em; }
+
+/* ============ reveal ============ */
+.reveal { opacity:0; transform:translateY(26px); transition: opacity .8s cubic-bezier(.2,.6,.2,1), transform .8s cubic-bezier(.2,.6,.2,1); }
+.reveal.in { opacity:1; transform:none; }
+
+/* ============ responsive ============ */
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; gap:44px; padding-top:56px; }
+  .name-story { grid-template-columns: 1fr; gap:34px; }
+  .scenes { grid-template-columns: 1fr; }
+  .features { grid-template-columns: 1fr; }
+  .downloads { grid-template-columns: 1fr; }
+  .nav-links a:not(.nav-cta) { display:none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
+  .reveal { opacity:1; transform:none; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-orb"></div>
+<div class="bg-grid"></div>
+
+<!-- ==================== Nav ==================== -->
+<nav>
+  <div class="nav-inner">
+    <a class="brand" href="#top">
+      <span class="brand-mark">💗</span>
+      <span>
+        <span class="brand-name">anhem</span>
+        <div class="brand-sub">越南语翻译器</div>
+      </span>
+    </a>
+    <div class="nav-links">
+      <a href="#story">名字</a>
+      <a href="#scenes">场景</a>
+      <a href="#features">功能</a>
+      <a href="#download">下载</a>
+      <a href="#online">在线使用</a>
+      <a href="https://anhem-translator.vercel.app" target="_blank" class="nav-cta">打开 App</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ==================== Hero ==================== -->
+<header class="hero" id="top">
+  <div>
+    <div class="hero-eyebrow"><span class="dot"></span>最新版本 <span id="navVersion">加载中…</span></div>
+    <h1>
+      你说中文，<br>
+      我回 <span class="vi">Tiếng Việt</span><br>
+      <span class="thin">中间只隔一个</span> 💗
+    </h1>
+    <p class="hero-sub">
+      anhem 为每一个 <b>中越对话</b>而生——谈生意、见朋友、过口岸。
+      自动识别方向，8 种身份语气，一句中文过去，<b>对方收到的是他的母语</b>。
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="https://anhem-translator.vercel.app" target="_blank">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        立即使用
+      </a>
+      <a class="btn btn-ghost" href="#download">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        下载 App
+      </a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><b>8 种</b><span>身份语气</span></div>
+      <div class="hero-stat"><b>2 秒</b><span>流式出结果</span></div>
+      <div class="hero-stat"><b>100%</b><span>本地私密</span></div>
+    </div>
+  </div>
+
+  <!-- 实时对话演示：产品自己的动作讲故事 -->
+  <div class="demo-card">
+    <div class="demo-head">
+      <div class="demo-dots"><i></i><i></i><i></i></div>
+      <span class="demo-title">anhem · 实时翻译</span>
+      <span class="demo-status"><span class="dot"></span>在线</span>
+    </div>
+    <div class="demo-stage" id="demoStage"></div>
+    <div class="demo-foot">
+      <span>Anh – Em：中越对话演示</span>
+      <span class="vi-word">Nói là hiểu ✦</span>
+    </div>
+  </div>
+</header>
+
+<!-- ==================== 名字的故事 ==================== -->
+<section class="section" id="story">
+  <div class="section-head reveal">
+    <div class="eyebrow">Tên gọi · 名字的由来</div>
+    <h2>在越南语里，<br>最亲近的人才有自己的称呼</h2>
+    <p class="lead">越南人不用「你」「我」，他们用 <b>anh</b>（哥）和 <b>em</b>（妹）称呼彼此在乎的人。一句称呼，就是一句走近。</p>
+  </div>
+  <div class="name-story">
+    <div class="name-vi reveal">
+      <span class="anh">Anh</span>
+      <span class="slash">/</span>
+      <span class="em">Em</span>
+      <span class="heart">💗</span>
+    </div>
+    <div class="name-copy reveal">
+      <p>我们叫它 <b>anhem</b>——因为这款翻译器想做的，不只是把词句译过去，而是让两个语言不同的人，也能像 <b>anh</b> 和 <b>em</b> 一样，自然地聊起来。</p>
+      <p class="vi-line">"Anh nói, em hiểu. Em nói, anh hiểu."</p>
+      <p>你说，我懂；我说，你懂。越过语言的墙，一句问候也能叫得这么亲。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 场景 ==================== -->
+<section class="section" id="scenes">
+  <div class="section-head reveal">
+    <div class="eyebrow">Chuyện · 三个真实瞬间</div>
+    <h2>它出现在哪，<br>哪里就有听懂的人</h2>
+  </div>
+  <div class="scenes">
+    <div class="scene reveal">
+      <div class="scene-tag">Hà Nội · 河内会议室</div>
+      <h3>谈一笔生意</h3>
+      <p>报价单递过去，对方用越南语问了三个问题。你在手机上打出中文，他看懂的瞬间，眉头松了。</p>
+      <div class="scene-demo">
+        <div class="mini zh"><span class="lang">中文</span>我们可以先付 30% 定金吗？</div>
+        <div class="mini vi"><span class="lang">Tiếng Việt</span>Chúng ta đặt cọc 30% trước được không?</div>
+      </div>
+    </div>
+    <div class="scene reveal">
+      <div class="scene-tag">Sài Gòn · 西贡咖啡店</div>
+      <h3>见一位朋友</h3>
+      <p>他不着急，你也不赶时间。冰咖啡加了两次，话题从天气聊到家人——没人记得中间隔着一门语言。</p>
+      <div class="scene-demo">
+        <div class="mini zh"><span class="lang">中文</span>你妈妈身体好些了吗？</div>
+        <div class="mini vi"><span class="lang">Tiếng Việt</span>Mẹ anh đỡ hơn chưa?</div>
+      </div>
+    </div>
+    <div class="scene reveal">
+      <div class="scene-tag">Lạng Sơn · 友谊关口岸</div>
+      <h3>过一次口岸</h3>
+      <p>报关单上那个词你没见过，值班员用越南语解释了一遍。你点头，他也笑——通关比想象中快。</p>
+      <div class="scene-demo">
+        <div class="mini zh"><span class="lang">中文</span>请问这批货今天能放行吗？</div>
+        <div class="mini vi"><span class="lang">Tiếng Việt</span>Lô hàng này hôm nay thông quan được không?</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 功能 ==================== -->
+<section class="section" id="features">
+  <div class="section-head reveal">
+    <div class="eyebrow">Điều gì · 它怎么做到</div>
+    <h2>复杂留给我们，<br>你只管说话</h2>
+  </div>
+  <div class="features">
+    <div class="feature reveal">
+      <span class="feature-num">01</span>
+      <div>
+        <h3>方向自己会猜</h3>
+        <p>输入中文就是中→越，输入越南语就是越→中。不用选方向，识别在 100 毫秒内完成。</p>
+      </div>
+    </div>
+    <div class="feature reveal">
+      <span class="feature-num">02</span>
+      <div>
+        <h3>语气跟着场合走</h3>
+        <p>8 种身份——谈生意、问长辈、哄朋友、逗小孩……同一句话，翻成对方觉得舒服的说法。</p>
+      </div>
+    </div>
+    <div class="feature reveal">
+      <span class="feature-num">03</span>
+      <div>
+        <h3>像说话一样快地出结果</h3>
+        <p>流式输出逐字上屏，第一句还没打完，第二句已经来了。</p>
+      </div>
+    </div>
+    <div class="feature reveal">
+      <span class="feature-num">04</span>
+      <div>
+        <h3>不打断你的消息</h3>
+        <p>灵动岛通知直达，翻译完悄悄告诉你——屏幕外也是它的主场。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 下载 ==================== -->
+<section class="section" id="download">
+  <div class="section-head reveal">
+    <div class="eyebrow">Tải về · 下载</div>
+    <h2>装进手机，<br>带进每一场对话</h2>
+    <p class="lead">版本号、大小、日期由官网自动读取最新发布——我们每更新一次，这里自动跟着变。</p>
+  </div>
+  <div class="downloads">
+    <div class="dl-card android reveal">
+      <div class="dl-icon">🤖</div>
+      <span class="dl-version" id="androidVersion">加载中…</span>
+      <h3>Android 版</h3>
+      <p class="desc">APK 安装包，支持 Android 7.0+。下载后点击安装，允许未知来源即可——装完就能离线用。</p>
+      <div class="dl-meta">
+        <div><span>文件大小</span><b id="androidSize">—</b></div>
+        <div><span>更新日期</span><b id="androidDate">—</b></div>
+      </div>
+      <a href="#" id="androidDownloadBtn" class="dl-btn solid">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        下载 APK
+      </a>
+    </div>
+    <div class="dl-card windows reveal">
+      <div class="dl-icon">🪟</div>
+      <span class="dl-version" id="winVersion">加载中…</span>
+      <h3>Windows 桌面版</h3>
+      <p class="desc">安装版（NSIS 向导）与便携版二选一。支持 Win 10 / 11，托盘常驻，翻译在后台，不挡工作。</p>
+      <div class="dl-meta">
+        <div><span>文件大小</span><b id="winSize">—</b></div>
+        <div><span>更新日期</span><b id="winDate">—</b></div>
+      </div>
+      <div class="dl-btns">
+        <a href="#" id="winSetupBtn" class="dl-btn solid">安装版</a>
+        <a href="#" id="winPortableBtn" class="dl-btn outline">便携版</a>
+      </div>
+    </div>
+  </div>
+  <p class="dl-note" id="downloadNote">下载最新版本中…</p>
+</section>
+
+<!-- ==================== 在线使用 ==================== -->
+<section class="section" id="online">
+  <div class="section-head reveal">
+    <div class="eyebrow">Trực tuyến · 在线</div>
+    <h2>不想装？<br>浏览器里直接用</h2>
+    <p class="lead">功能与下载版完全一致，数据保存在本地。手机、电脑都行，打开即用。</p>
+  </div>
+  <div class="online-wrap reveal">
+    <div class="online-head">
+      <div>
+        <h3>在线版 anhem</h3>
+        <p>无需安装 · 免费 · 与 App 数据互通</p>
+      </div>
+      <a class="btn btn-primary" href="https://anhem-translator.vercel.app" target="_blank">
+        打开在线版
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+      </a>
+    </div>
+    <div class="online-frame">
+      <iframe src="https://anhem-translator.vercel.app" title="anhem 在线版" loading="lazy"></iframe>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 更新日志 ==================== -->
+<section class="section" id="updates">
+  <div class="section-head reveal">
+    <div class="eyebrow">Nhật ký · 更新日志</div>
+    <h2>我们在往前走</h2>
+    <p class="lead">每一次更新，都会让「懂」再近一点。</p>
+  </div>
+  <div class="log-card reveal">
+    <div class="log-meta">
+      <span class="log-tag" id="logTag">—</span>
+      <span class="log-date" id="logDate">—</span>
+    </div>
+    <div id="changelog" class="log-empty">加载更新日志…</div>
+  </div>
+</section>
+
+<!-- ==================== Footer ==================== -->
+<footer>
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <span>💗 anhem · 越南语翻译器</span>
+      <span class="foot-vi">— nói là hiểu</span>
+    </div>
+    <div class="foot-links">
+      <a href="https://github.com/miiinniam/anhem-translator" target="_blank">GitHub</a>
+      <a href="https://anhem-translator.vercel.app" target="_blank">在线版</a>
+      <a href="#download">下载</a>
+      <span>v<span id="footerVersion">—</span></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ==================== Hero 对话演示（故事核心） ==================== */
+const DIALOGUE = [
+  { lang: 'zh', who: '你', text: '到了越南，见到你真好。' },
+  { lang: 'vi', who: 'Anh', text: 'Được gặp anh, em vui lắm.' },
+  { lang: 'zh', who: '你', text: '合同细节，我们微信上聊？' },
+  { lang: 'vi', who: 'Em', text: 'Chi tiết hợp đồng mình chat Zalo nhé?' },
+  { lang: 'zh', who: '你', text: '好，明天见！' },
+  { lang: 'vi', who: 'Anh', text: 'Hẹn gặp lại ngày mai!' },
+];
+
+(function runDialogue() {
+  const stage = document.getElementById('demoStage');
+  if (!stage) return;
+  const bubbles = [];
+  let step = 0;
+
+  function typeText(el, text, i, done) {
+    if (i > text.length) { done(); return; }
+    el.textContent = text.slice(0, i);
+    setTimeout(() => typeText(el, text, i + 1, done), 34);
+  }
+
+  function playStep() {
+    // 清掉旧的（保留最近 3 个气泡）
+    while (bubbles.length > 2) {
+      const old = bubbles.shift();
+      old.classList.remove('show');
+      setTimeout(() => old.remove(), 500);
+    }
+    const d = DIALOGUE[step % DIALOGUE.length];
+    const b = document.createElement('div');
+    b.className = 'bubble ' + d.lang;
+    b.innerHTML = '<span class="lang">' + (d.lang === 'zh' ? '中文 · ' + d.who : d.lang === 'vi' ? 'Tiếng Việt · ' + d.who : '') + '</span><span class="txt"></span><span class="caret"></span>';
+    stage.appendChild(b);
+    bubbles.push(b);
+    const txt = b.querySelector('.txt');
+    const caret = b.querySelector('.caret');
+    requestAnimationFrame(() => b.classList.add('show'));
+    typeText(txt, d.text, 0, () => {
+      caret.remove();
+      step++;
+      const delay = d.lang === 'vi' ? 2300 : 1700;
+      setTimeout(playStep, delay);
+    });
+  }
+  playStep();
+})();
+
+/* ==================== Reveal on scroll ==================== */
+(function initReveal() {
+  const els = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) { els.forEach(el => el.classList.add('in')); return; }
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  els.forEach(el => io.observe(el));
+})();
+
+/* ==================== 版本数据自动加载（GitHub Releases） ==================== */
+const GITHUB_REPO = 'miiinniam/anhem-translator';
+function fmtSize(bytes) {
+  if (!bytes) return '—';
+  const mb = bytes / 1024 / 1024;
+  return mb >= 1 ? mb.toFixed(1) + ' MB' : Math.round(bytes / 1024) + ' KB';
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
+
+async function loadRelease() {
+  try {
+    let r = null;
+    const resp = await fetch('https://api.github.com/repos/' + GITHUB_REPO + '/releases/latest', {
+      headers: { 'Accept': 'application/vnd.github+json' }
+    });
+    if (resp.ok) {
+      r = await resp.json();
+    } else if (resp.status === 404) {
+      const listResp = await fetch('https://api.github.com/repos/' + GITHUB_REPO + '/releases?per_page=1', {
+        headers: { 'Accept': 'application/vnd.github+json' }
+      });
+      if (listResp.ok) {
+        const list = await listResp.json();
+        r = Array.isArray(list) && list.length ? list[0] : null;
+      } else {
+        throw new Error('HTTP ' + listResp.status);
+      }
+    } else {
+      throw new Error('HTTP ' + resp.status);
+    }
+
+    if (!r) {
+      setText('navVersion', '暂无发布');
+      setText('footerVersion', '—');
+      setText('androidVersion', '暂无发布');
+      setText('winVersion', '暂无发布');
+      setText('androidSize', '—');
+      setText('winSize', '—');
+      document.getElementById('downloadNote').textContent = '首个版本即将发布，敬请期待。';
+      document.getElementById('changelog').textContent = '📦 首个版本即将发布，敬请期待。';
+      return;
+    }
+
+    const tag = (r.tag_name || '').replace(/^v/, '');
+    const date = fmtDate(r.published_at);
+    const assets = r.assets || [];
+
+    let apk = null, winSetup = null, winPortable = null;
+    assets.forEach(a => {
+      const n = (a.name || '').toLowerCase();
+      if (n.endsWith('.apk') && !apk) apk = a;
+      else if (/setup.*\.exe$/.test(n) && !winSetup) winSetup = a;
+      else if (/便携版.*\.exe$/.test(n) && !winPortable) winPortable = a;
+    });
+
+    setText('navVersion', 'v' + tag);
+    setText('footerVersion', tag);
+
+    if (apk) {
+      setText('androidVersion', 'v' + tag);
+      setText('androidSize', fmtSize(apk.size));
+      setText('androidDate', date);
+      const btn = document.getElementById('androidDownloadBtn');
+      btn.href = apk.browser_download_url;
+      btn.setAttribute('download', apk.name);
+    } else {
+      setText('androidVersion', '暂无发布');
+      setText('androidSize', '—');
+    }
+
+    const winAny = winSetup || winPortable;
+    if (winAny) {
+      setText('winVersion', 'v' + tag);
+      setText('winSize', fmtSize(winAny.size));
+      setText('winDate', date);
+      if (winSetup) document.getElementById('winSetupBtn').href = winSetup.browser_download_url;
+      if (winPortable) document.getElementById('winPortableBtn').href = winPortable.browser_download_url;
+    } else {
+      setText('winVersion', '暂无发布');
+      setText('winSize', '—');
+    }
+
+    document.getElementById('downloadNote').textContent = '版本号、大小、日期自动读取最新发布 —— 我们每更新一次，这里自动跟着变。';
+    setText('logTag', r.tag_name || '—');
+    setText('logDate', date ? '发布于 ' + date : '');
+
+    const logBox = document.getElementById('changelog');
+    if (r.body) {
+      const lines = r.body.split('\n').filter(l => l.trim());
+      logBox.innerHTML = lines.map(l => {
+        const t = l.trim();
+        if (!t) return '';
+        if (/^#{1,2}\s/.test(t)) return '<div class="log-h">' + t.replace(/^#+\s*/, '') + '</div>';
+        if (/^[-•]/.test(t)) return '<div style="padding-left:14px;position:relative;"><span style="color:var(--red);position:absolute;left:0;">•</span>' + t.replace(/^[-•]\s*/, '') + '</div>';
+        return '<div>' + t + '</div>';
+      }).join('') || '<div class="log-empty">本次发布暂无详细说明</div>';
+    } else {
+      logBox.innerHTML = '<div class="log-empty">本次发布暂无详细说明</div>';
+    }
+  } catch (e) {
+    console.error('加载版本失败:', e);
+    setText('navVersion', '加载失败');
+    setText('androidVersion', '加载失败');
+    setText('winVersion', '加载失败');
+    setText('androidSize', '—');
+    setText('winSize', '—');
+    document.getElementById('downloadNote').textContent = '暂时无法连接版本服务器，请稍后刷新重试。';
+    const logBox = document.getElementById('changelog');
+    if (logBox) logBox.innerHTML = '<div class="log-empty">暂时无法连接版本服务器，请稍后刷新重试。</div>';
+  }
+}
+
+loadRelease();
+</script>
+</body>
+</html>
