@@ -683,7 +683,7 @@ async function loadRelease() {
       const n = (a.name || '').toLowerCase();
       if (n.endsWith('.apk') && !apk) apk = a;
       else if (/setup.*\.exe$/.test(n) && !winSetup) winSetup = a;
-      else if (/便携版.*\.exe$/.test(n) && !winPortable) winPortable = a;
+      else if (/(便携版|portable).*\.exe$/.test(n) && !winPortable) winPortable = a;
     });
 
     setText('navVersion', 'v' + tag);
