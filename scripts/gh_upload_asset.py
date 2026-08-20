@@ -19,8 +19,9 @@ def main():
         print("上传 %s ..." % name)
         with open(f, "rb") as fh:
             up = requests.post(
-                "https://uploads.github.com/repos/%s/releases/%s/assets?name=%s"
-                % (REPO, rid, name),
+                "https://uploads.github.com/repos/%s/releases/%s/assets"
+                % (REPO, rid),
+                params={"name": name},
                 headers={**HDRS, "Content-Type": "application/octet-stream"},
                 data=fh,
                 timeout=900,

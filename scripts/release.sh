@@ -22,9 +22,9 @@ echo "=== anhem 发布 $VERSION ==="
 cd "$(dirname "$0")/.."
 
 # 1. 检查构建产物
-APK=$(ls apk/【请安装这个】anhem快译-Android/anhem快译-*.apk 2>/dev/null | head -1)
-WIN_SETUP=$(ls desktop/dist/anhem*Setup*.exe 2>/dev/null | head -1)
-WIN_PORTABLE=$(ls desktop/dist/anhem*便携版*.exe 2>/dev/null | head -1)
+APK=$(ls -t apk/【请安装这个】anhem快译-Android/anhem快译-*.apk 2>/dev/null | head -1)
+WIN_SETUP=$(ls -t desktop/dist/anhem*Setup*.exe 2>/dev/null | head -1)
+WIN_PORTABLE=$(ls -t desktop/dist/anhem*便携版*.exe 2>/dev/null | head -1)
 
 echo "APK  : ${APK:-未找到}"
 echo "安装版: ${WIN_SETUP:-未找到}"
