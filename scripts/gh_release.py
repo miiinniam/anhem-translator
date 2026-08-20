@@ -3,6 +3,7 @@
 """anhem release 创建/上传助手（供 release.sh 调用，规避 shell JSON 转义问题）"""
 import json
 import os
+import re
 import sys
 
 import requests
@@ -37,13 +38,29 @@ def main():
     rid = resp.json()["id"]
     print("✅ Release #%s 已创建: %s" % (rid, version))
 
-    # 2. 上传资产
+    # 2. 上传资产（文件名统一转 ASCII，避免中文编码问题；版本取自 tag）
+    def ascii_asset_name(path, version):
+        base = os.path.basename(path)
+        low = base.lower()
+        ver = version.lstrip("v")  # v2.5 -> 2.5
+        if low.endswith(".apk"):
+            return "anhem-%s.apk" % ver
+        if "setup" in low:
+            return "anhem-setup-%s.exe" % ver
+        if "portable" in low or "便携" in low:
+            return "anhem-portable-%s.exe" % ver
+        # 兜底：保 ASCII + 扩展名
+        keep = re.sub(r"[^a-zA-Z0-9._-]+", "-", base).strip("-.")
+        return keep
+
     for f in files:
-        name = os.path.basename(f)
+        name = ascii_asset_name(f, version)
+        print("上传 %s -> %s ..." % (os.path.basename(f), name))
         with open(f, "rb") as fh:
             up = requests.post(
-                "https://uploads.github.com/repos/%s/releases/%s/assets?name=%s"
-                % (REPO, rid, name),
+                "https://uploads.github.com/repos/%s/releases/%s/assets"
+                % (REPO, rid),
+                params={"name": name},
                 headers={**HDRS, "Content-Type": "application/octet-stream"},
                 data=fh,
                 timeout=300,
