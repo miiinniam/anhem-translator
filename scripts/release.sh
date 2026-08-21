@@ -72,5 +72,8 @@ GH_TOKEN="$TOKEN" env -u PYTHONPATH python "$(dirname "$0")/gh_release.py" "$VER
 echo ""
 echo "=========================================="
 echo "🎉 anhem $VERSION 已发布！"
-echo "官网（https://anhem.vercel.app）将在用户刷新后自动显示新版。"
+echo "官网（https://anhem-app.vercel.app）将在用户刷新后自动显示新版。"
 echo "=========================================="
+
+# 6. 同步官网 alias（确保 anhem-app 指向最新部署）
+bash "$(dirname "$0")/sync_alias.sh"
